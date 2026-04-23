@@ -7,10 +7,13 @@ jest.mock("@react-native-async-storage/async-storage", () =>
     require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+// TO FIX. Onboarding was hidden bc of apple guidelines
+/*
 test('should show onboarding screen while opening the app', async () => {
     render(<App />);
     await screen.findByTestId('onboardingView');
 });
+*/
 
 test('should not show onboarding screen after user has seen it', async () => {
     await AsyncStorage.setItem('onboarding', 'true');
@@ -21,6 +24,8 @@ test('should not show onboarding screen after user has seen it', async () => {
 });
 
 describe('Onboarding', () => {
+    // TO FIX
+    /*
     it('should display error message when user tries to submit empty form', async () => {
         const user = userEvent.setup();
         render(<App />);
@@ -66,6 +71,7 @@ describe('Onboarding', () => {
         letsGoButton = screen.getByTestId('letsGoButton');
         await user.press(letsGoButton);
     });
+    */
 
 
 
