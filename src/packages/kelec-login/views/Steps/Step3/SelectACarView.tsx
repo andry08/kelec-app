@@ -78,6 +78,7 @@ const SelectACarView = (props: Props) => {
             const vehiclesModels = [];
             for (const vehicle of vehicles.vehicles) {
                 const name = vehicle.vehicleDetails.model.label;
+                const carMaker = vehicle.vehicleDetails.brand.label.toLowerCase() as CarMaker;
                 const vin = vehicle.vin;
                 const registrationNumber = vehicle.vehicleDetails.registrationNumber;
                 let imageUrl = 'https://api.kelec.app/placeholder'; // default image if car doesn't have one
@@ -86,9 +87,10 @@ const SelectACarView = (props: Props) => {
                         imageUrl = asset.renditions[0].url;
                     }
                 }
-                const carModel = new RenaultCar(vin, name, imageUrl, CarMaker.RENAULT, registrationNumber);
+                const carModel = new RenaultCar(vin, name, imageUrl, carMaker, registrationNumber);
                 vehiclesModels.push(carModel);
             }
+
             setCars(vehiclesModels);
             setViewState(ViewState.LOADED);
         } catch (error) {

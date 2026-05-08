@@ -120,6 +120,9 @@ type KamereonVehiclesApiResponse = {
 type VehicleLinkApi = {
     vin: string;
     vehicleDetails: {
+        brand: {
+            label: string;
+        };
         model: {
             label: string;
         }
