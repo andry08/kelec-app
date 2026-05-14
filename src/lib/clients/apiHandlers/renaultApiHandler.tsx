@@ -1,6 +1,6 @@
 import AppPreferences from "../../appPreferences/model/appPreferences";
 import { getDistance } from "../../graphics/utils";
-import { BatteryStatus, ChargeSettingsStatus, CockpitStatus, HVACStatus, MapLocationStatus, RenaultStatus } from "../carMakers/renaultClient";
+import { BatteryStatus, ChargeSettingsStatus, CockpitStatus, HVACStatus, MapLocationStatus, RemoteFeature, RenaultStatus } from "../carMakers/renaultClient";
 import { HVACStatusEnum } from "../carMakers/renaultEnums";
 import CarType, { CarAvailableModels } from "../cars/carTypes/carType";
 import ApiHandler from "./apiHandler";
@@ -27,8 +27,13 @@ class RenaultApiHandler implements ApiHandler {
         hasError: boolean;
         apiData?: HVACStatus;
     }
+    private apiRemoteFeatures?: {
+        hasError: boolean;
+        apiData?: RemoteFeature[];
+        lastUpdated?: number;
+    };
 
-    // initial charge hisotry handler with error
+    // initial charge history handler with error
     private apiChargesHistory: RenaultChargesHandler = new RenaultChargesHandler([], true);
     constructor(batteryStatus?: RenaultStatus) {
         this.apiBatteryStatusRenault = batteryStatus;
@@ -215,7 +220,13 @@ class RenaultApiHandler implements ApiHandler {
         return this.apiHVACStatus?.apiData?.socThreshold ?? null;
     }
 
+    setRemoteFeatures(features: RenaultStatus): void {
+        this.apiRemoteFeatures = features;
+    }
 
+    getRemoteFeatures(): RemoteFeature[] | null {
+        return this.apiRemoteFeatures?.apiData ?? null;
+    }
 }
 
 export default RenaultApiHandler;
