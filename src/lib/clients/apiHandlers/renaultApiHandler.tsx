@@ -95,7 +95,9 @@ class RenaultApiHandler implements ApiHandler {
     hasError(): boolean {
         return this.apiBatteryStatusRenault?.hasError ?? true;
     }
+
     shouldDisplayMap(): boolean {
+        //return !!this.apiRemoteFeatures?.apiData?.find(a => a.featureId == 12);
         return this.apiLocationStatus?.apiData?.gpsLatitude !== undefined;
     }
 
@@ -120,7 +122,7 @@ class RenaultApiHandler implements ApiHandler {
     }
 
     shouldDisplayHVACCard(): boolean {
-        return true;
+        return !!this.apiRemoteFeatures?.apiData?.find(a => a.featureId == 366);
     }
 
     shouldDisplayChargesCard(): boolean {
