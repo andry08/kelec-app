@@ -22,13 +22,13 @@ class StorageHandler {
 
     getHasSeenOnboarding = async (): Promise<boolean> => {
         // check if the user has seen the onboarding
-        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenLoginOnboarding');
         return hasSeenOnboarding === 'true';
     }
 
     setHasSeenOnboarding = async (): Promise<void> => {
         // set that the user has seen the onboarding
-        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        await AsyncStorage.setItem('hasSeenLoginOnboarding', 'true');
     }
 
     saveAccount = async (account: UserAccount): Promise<void> => {
@@ -75,9 +75,11 @@ class StorageHandler {
                 password = typedAccout.password;
             }
             switch (carMaker) {
+                case CarMaker.ALPINE:
+                case CarMaker.DACIA:
                 case CarMaker.RENAULT:
                     carToAdd = new CarModel(typedCar.vin, typedCar.model, typedCar.imageUrl, typedCar.carMaker, typedCar.registrationNumber);
-                    currentUserAccount.addCar(new RenaultAccount(typedAccout.email, password ?? '', typedAccout.kamereonAccountID ?? "", carToAdd, typedAccout.firstName, typedAccout.lastName));
+                    currentUserAccount.addCar(new RenaultAccount(typedAccout.email, password ?? '', typedAccout.kamereonAccountID ?? "", carToAdd, typedAccout.firstName, typedAccout.lastName, carMaker));
                     break;
                 case CarMaker.HYUNDAI:
                     carToAdd = new CarModel(typedCar.vin, typedCar.model, typedCar.imageUrl, typedCar.carMaker, typedCar.registrationNumber);
