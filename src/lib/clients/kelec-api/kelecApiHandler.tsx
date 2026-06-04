@@ -50,6 +50,25 @@ class KelecApiHandler {
         return data.batteries.sort((a: BatteryApi, b: BatteryApi) => a.size - b.size);
     }
 
+    async getMessage(version: string, language: string): Promise<string | null> {
+        try {
+            const url = `${this.baseUrl}/messages/${version}?language=${language}`;
+
+            const response = await fetch(url);
+
+            if (response.status !== 200) {
+                throw new Error("Failed to fetch message");
+            }
+
+            const data = await response.json();
+            return data.message;
+        } catch (e) {
+            // nothing to do
+            return null;
+        }
+
+    };
+
 
 }
 
