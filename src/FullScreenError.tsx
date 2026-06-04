@@ -18,8 +18,10 @@ const getErrorMessage = (message: string) => {
             return "privacyModeOn";
         case "err.func.wired.notFound":
             return "dataNotYetAvailable";
+        case "pending_tfa":
+            return "pendingTFA";
         default:
-            return "impossibleToConnectToServer";
+            return message;
     }
 };
 interface FullScreenErrorProps {

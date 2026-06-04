@@ -41,6 +41,7 @@ type GigyaTokenApiResponse = {
     errorMessage: string;
     statusCode: number;
     statusReason: string;
+    regToken?: string;
     data: {
         personId: string;
         gigyaDataCenter: string;
@@ -57,6 +58,7 @@ export type GigyaTokenFunctionResponse = {
     errorMessage?: string;
     cookieValue?: string;
     personId?: string;
+    regToken?: string;
 }
 
 // dict returned by the api call to get the JWT token
@@ -107,6 +109,7 @@ type LoginFunctionReponse = {
     kamereonAccountID?: string;
     firstName?: string;
     lastName?: string;
+    regToken?: string;
 }
 
 type VehiclesFunctionResponse = {
@@ -161,6 +164,7 @@ type RenaultStatus = {
     hasError: boolean;
     errorMessage?: string;
     apiData?: any;
+    regToken?: string;
 }
 
 type BatteryStatus = {
@@ -236,9 +240,9 @@ type MapLocationStatus = {
 class RenaultClient extends CarMakerClient {
 
     private static readonly GIGYA_URL = 'https://gigya-prod-eu1.renaultgroup.com';
-    private static readonly GIGYA_API_KEY = Config.GIGYA_API_KEY;
+    private static readonly GIGYA_API_KEY = Config.GIGYA_API_KEY ?? '';
     private static readonly KAMEREON_URL = 'https://api-wired-prod-1-euw1.wrd-aws.com';
-    private static readonly KAMEREON_API_KEY = Config.KAMEREON_API_KEY;
+    private static readonly KAMEREON_API_KEY = Config.KAMEREON_API_KEY ?? '';
 
     kamereonAccountID: string;
 
@@ -252,12 +256,10 @@ class RenaultClient extends CarMakerClient {
         // d'abord on vérifie si l'utilisateur n'a pas déjà un cookieValue stocké
         const storedCookieValue = await RenaultCredentials.getCookieValue(this.getEmail());
         if (storedCookieValue !== null) {
-            return {
-                canLogin: true,
-                cookieValue: storedCookieValue.cookieValue,
-                personId: storedCookieValue.personId
-            };
+            return storedCookieValue
         }
+
+        // sinon on le récupère
         const url = RenaultClient.GIGYA_URL + RenaultEndpoints.GET_GIGYA_TOKEN;
         const body = {
             loginID: this.getEmail(),
@@ -278,6 +280,7 @@ class RenaultClient extends CarMakerClient {
                     switch (typedData.statusCode) {
                         // good creds
                         case 200: {
+                            // on stocke le cookieValue pour les prochaines connexions
                             RenaultCredentials.storeCookieValue(this.getEmail(), {
                                 canLogin: true,
                                 cookieValue: typedData.sessionInfo.cookieValue,
@@ -292,20 +295,38 @@ class RenaultClient extends CarMakerClient {
                         }
                         // bad creds
                         case 403:
-                            typedData.errorDetails == "Account temporarily locked out" ?
-                                resolve({
-                                    canLogin: false,
-                                    errorMessage: CarMakerClientErrors.ACCOUNT_LOCKED
-                                }) :
-                                resolve({
-                                    canLogin: false,
-                                    errorMessage: CarMakerClientErrors.INVALID_CREDENTIALS
-                                });
+                            switch (typedData.errorDetails) {
+                                case "Pending Two-Factor Authentication":
+                                    resolve({
+                                        canLogin: false,
+                                        errorMessage: CarMakerClientErrors.PENDING_TFA,
+                                        regToken: typedData.regToken
+                                    });
+                                    break;
+                                case "Account temporarily locked out":
+                                    resolve({
+                                        canLogin: false,
+                                        errorMessage: CarMakerClientErrors.ACCOUNT_LOCKED
+                                    });
+                                    break;
+                                case "invalid loginID or password":
+                                    resolve({
+                                        canLogin: false,
+                                        errorMessage: CarMakerClientErrors.INVALID_CREDENTIALS
+                                    });
+                                    break;
+                                default:
+                                    resolve({
+                                        canLogin: false,
+                                        errorMessage: typedData.errorMessage ?? CarMakerClientErrors.SERVER_ERROR
+                                    })
+                                    break;
+                            }
                             break;
                         default:
                             resolve({
                                 canLogin: false,
-                                errorMessage: typedData.errorDetails
+                                errorMessage: typedData.errorMessage ?? CarMakerClientErrors.SERVER_ERROR
                             });
                             break;
                     }
@@ -351,13 +372,17 @@ class RenaultClient extends CarMakerClient {
             }).then((response) => {
                 response.json().then((data: unknown) => {
                     const typedData = data as JWTTokenApiResponse
-                    if (typedData.statusCode === 200) {
-                        RenaultCredentials.storeJWT(this.getEmail(), typedData.id_token ?? "");
+                    if (typedData.statusCode === 200 && typedData.id_token !== undefined) {
+                        RenaultCredentials.storeJWT(this.getEmail(), typedData.id_token);
                         resolve({
                             canLogin: true,
                             jwtToken: typedData.id_token
                         });
                     } else {
+                        if (typedData.errorDetails == "Unauthorized user") {
+                            // le cookie value a probablement expiré il faut le supprimer pour le regénérer
+                            RenaultCredentials.clearCredentials(this.getEmail());
+                        }
                         resolve({
                             canLogin: false,
                             errorMessage: CarMakerClientErrors.SERVER_ERROR
@@ -661,7 +686,8 @@ class RenaultClient extends CarMakerClient {
         if (!gigyaToken.canLogin) {
             return {
                 canLogin: false,
-                errorMessage: gigyaToken.errorMessage
+                errorMessage: gigyaToken.errorMessage,
+                regToken: gigyaToken.regToken
             };
         }
         const jwtToken = await this.getJWTToken(gigyaToken.cookieValue!);
@@ -721,10 +747,16 @@ class RenaultClient extends CarMakerClient {
                         hasError: true,
                         errorMessage: CarMakerClientErrors.INVALID_CREDENTIALS
                     }
+                case CarMakerClientErrors.PENDING_TFA:
+                    return {
+                        hasError: true,
+                        errorMessage: CarMakerClientErrors.PENDING_TFA,
+                        regToken: gigyaToken.regToken
+                    }
                 default:
                     return {
                         hasError: true,
-                        errorMessage: CarMakerClientErrors.SERVER_ERROR
+                        errorMessage: gigyaToken.errorMessage ?? CarMakerClientErrors.SERVER_ERROR
                     }
             }
         }

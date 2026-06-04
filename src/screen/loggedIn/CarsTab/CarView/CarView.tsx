@@ -28,13 +28,10 @@ import CarsViewContext from "../../../../lib/Contexts/CarsViewContext";
 import PagerView from "react-native-pager-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import RenaultCharge from "../../../../lib/clients/apiHandlers/renaultCharges/RenaultCharge";
-
-type CarViewProps = {
-    readonly carModel: CarModel;
-    readonly account: Account;
-    readonly navigation: any;
-    readonly pagerRef: React.RefObject<PagerView | null>;
-}
+import { CarMakerClientErrors } from "../../../../lib/clients/carMakers/carMakerClient";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { CarsViewParamList } from "../CarsPageView";
+import { TfaOrigin } from "../../../../packages/kelec-login/views/Steps/Step2/Tfa/TfaView";
 
 enum ViewState {
     LOADING = 'LOADING',
@@ -42,7 +39,14 @@ enum ViewState {
     LOADED = 'LOADED',
 }
 
-function CarView({ carModel, navigation, account, pagerRef }: CarViewProps): React.JSX.Element {
+type CarViewProps = NativeStackScreenProps<CarsViewParamList, "CarView"> & {
+    carModel: CarModel;
+    account: Account;
+    pagerRef: React.RefObject<PagerView | null>;
+    tfaInProgress: React.RefObject<boolean>;
+}
+
+function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: CarViewProps): React.JSX.Element {
     const isDarkMode = useColorScheme() === 'dark';
 
     useEffect(() => {
@@ -213,10 +217,28 @@ function CarView({ carModel, navigation, account, pagerRef }: CarViewProps): Rea
             await storageHandler.storeApiData(data, carModel.getVin());
         } else {
             setErrorMessage(data.errorMessage ?? '');
-            if (!localApiHandler.hasError()) {
-                // remote failed but data have been fetched one time
-                Alert.alert(languageHandler.getTranslation("error"), languageHandler.getTranslation(getErrorMessage(data.errorMessage ?? '')));
+            if (data.errorMessage == CarMakerClientErrors.PENDING_TFA) {
+                // il faut refaire le TFA 
+                if (!tfaInProgress.current) {
+                    tfaInProgress.current = true;
+                    navigation.navigate("TfaView", {
+                        regToken: data.regToken ?? '',
+                        origin: TfaOrigin.CAR_PAGE
+                    });
+                }
+
+            } else {
+                if (!localApiHandler.hasError()) {
+                    // remote failed but data have been fetched one time
+                    Alert.alert(languageHandler.getTranslation("error"), languageHandler.getTranslation(getErrorMessage(data.errorMessage ?? '')));
+                } else {
+                    // remote failed and no data have been fetched
+                    setViewState(ViewState.ERROR);
+                }
             }
+
+
+            return;
         }
 
         cockpitData = await account.fetchCarCockpit(carModel.getVin());
