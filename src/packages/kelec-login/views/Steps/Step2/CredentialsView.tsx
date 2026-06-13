@@ -1,8 +1,8 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, RefObject, useRef } from "react";
+import { findNodeHandle, NativeModules, TextInput, Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import MainContext from "../../../../../lib/Contexts/MainContext";
-import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
 import { capitlizeFirstLetter } from "../../../../../lib/graphics/utils";
-import Field from "../../../../kelec-model/view/Field";
+import Field, { FieldType } from "../../../../kelec-model/view/Field";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LoginEntryParamList } from "../../LoginEntryView";
 import DemoAccount from "../../../../../lib/clients/accounts/demoAccount";
@@ -28,7 +28,22 @@ const CredentialsView = (props: Props) => {
     const [password, setPassword] = useState<string>("");
 
     const [isLightLoading, setIsLightLoading] = useState<boolean>(false);
-    // login 
+
+  const { AutofillModule } = NativeModules;
+
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+
+  const handleFocus = (ref: RefObject<TextInput> | undefined) => {
+    if (!ref?.current) return;
+    const tag = findNodeHandle(ref.current);
+    if (tag) AutofillModule?.notifyViewEntered(tag);
+  };
+
+    const onLoginSuccess = () => AutofillModule?.commit();
+    const onLoginError = () => AutofillModule?.cancel();
+
+    // login
     const handleLogin = async () => {
         setIsLightLoading(true);
 
@@ -68,6 +83,7 @@ const CredentialsView = (props: Props) => {
         navigation.navigate("SelectACarView", {
             account: account
         });
+        onLoginSuccess();
     };
 
     /**
@@ -84,6 +100,7 @@ const CredentialsView = (props: Props) => {
                 [
                     { text: languageHandler.getTranslation('ok') }
                 ]);
+            onLoginError();
             return;
         }
 
@@ -99,6 +116,7 @@ const CredentialsView = (props: Props) => {
                 [
                     { text: languageHandler.getTranslation('ok') }
                 ]);
+            onLoginError();
         }
 
     };
@@ -143,6 +161,7 @@ const CredentialsView = (props: Props) => {
                 { text: languageHandler.getTranslation('ok') }
             ]
         );
+        onLoginError();
     };
 
     return (
@@ -173,21 +192,26 @@ const CredentialsView = (props: Props) => {
                         ]
                     }
                 >
-                    <Field
-                        testID="emailInput"
-                        label={languageHandler.getTranslation("email")}
-                        placeholder={languageHandler.getTranslation("email")}
-                        value={email}
-                        onChangeText={setEmail}
-                    />
-                    <Field
-                        testID="passwordInput"
-                        label={languageHandler.getTranslation("password")}
-                        placeholder={languageHandler.getTranslation("password")}
-                        value={password}
-                        onChangeText={setPassword}
-                        isPrivate={true}
-                    />
+                  <Field
+                    ref={emailRef}
+                    testID="emailInput"
+                    fieldType={FieldType.Email}
+                    label={languageHandler.getTranslation('email')}
+                    placeholder={languageHandler.getTranslation('email')}
+                    value={email}
+                    onFocus={handleFocus}
+                    onChangeText={setEmail}
+                  />
+                  <Field
+                    ref={passwordRef}
+                    testID="passwordInput"
+                    fieldType={FieldType.Password}
+                    label={languageHandler.getTranslation('password')}
+                    placeholder={languageHandler.getTranslation('password')}
+                    value={password}
+                    onFocus={handleFocus}
+                    onChangeText={setPassword}
+                  />
 
                 </View>
             </LoginDefaultView>
