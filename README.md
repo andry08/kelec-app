@@ -28,3 +28,50 @@ If you face some issues with generating the package-lock.json file, you can use 
 ```bash
 docker run --rm -v $(pwd):/app -w /app node:24.16.0 npm install
 ```
+
+# Local Sonar test
+
+Run a SonarQube scan locally with Docker, without going through GitHub Actions.
+
+## Prerequisites
+
+Docker must be installed and running before using this script.
+
+**macOS**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — `brew install --cask docker`
+- or [OrbStack](https://orbstack.dev/) (lighter, faster alternative) — `brew install orbstack`
+- or [Colima](https://github.com/abiosoft/colima) (CLI-only, no GUI) — `brew install colima docker && colima start`
+
+**Windows**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (requires WSL2)
+
+**Linux**
+- [Docker Engine](https://docs.docker.com/engine/install/) — native daemon, no desktop app needed
+- or Docker Desktop for Linux if you prefer a GUI
+
+Check it's ready with:
+
+```bash
+docker info
+```
+
+## Usage
+
+```bash
+chmod +x test-sonar-local.sh
+./test-sonar-local.sh
+```
+
+On first run: launches SonarQube, asks for a token (generate one at `http://localhost:9000` → My Account → Security → Generate Tokens), then runs the scan.
+
+## Commands
+
+```bash
+./test-sonar-local.sh              # everything: start SonarQube if needed + scan
+./test-sonar-local.sh --scan-only  # SonarQube already running, just re-run the scan
+./test-sonar-local.sh --stop       # stop and remove the SonarQube container
+```
+
+## Results
+
+`http://localhost:9000/dashboard?id=Kelec_Nextgen`
