@@ -13,6 +13,7 @@ import BigButton, { ButtonColours } from "../../../../Common/BigButton";
 import ChargeLimitSlider from "../../../../../packages/kelec-login/views/Steps/Step4/ChargeLimitSlider";
 import RenaultAccount from "../../../../../lib/clients/accounts/renaultAccount";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AUTHORISED_MODELS, CarAvailableModels } from "../../../../../lib/clients/cars/carTypes/carType";
 
 function BatteryCard(): React.JSX.Element {
     const isDarkMode = useColorScheme() === 'dark';
@@ -152,7 +153,7 @@ function BatteryCard(): React.JSX.Element {
     return (
         <TouchableOpacity
             testID="BatteryCardButton"
-            disabled={!carType.shouldDisplayChargingLimit()}
+            disabled={!(AUTHORISED_MODELS.includes(carType.getCarModel().name as CarAvailableModels))}
             onPress={() => {
                 setShouldOpenBatteryModal(true);
                 handleModalAnim(true);
