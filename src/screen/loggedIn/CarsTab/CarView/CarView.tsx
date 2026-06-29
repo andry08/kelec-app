@@ -33,6 +33,7 @@ import { CarsViewParamList } from "../CarsPageView";
 import { TfaOrigin } from "../../../../packages/kelec-login/views/Steps/Step2/Tfa/TfaView";
 import BottomSheet from "../../../Common/bottomSheet/BottomSheet";
 import QuickSwitchView from "./Elements/QuickSwitch/QuickSwitchView";
+import RenaultAccount from "../../../../lib/clients/accounts/renaultAccount";
 
 enum ViewState {
     LOADING = 'LOADING',
@@ -190,6 +191,13 @@ function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: Car
             localApiHandler.setHVACStatus(hvacStatus);
         }
 
+        // load soc levels
+        let socLevels = await storageHandler.getStoredApiData(carModel.getVin(), 'socLevels');
+        if (socLevels) {
+            if (socLevels.apiData?.socTarget) {
+                localApiHandler.setChargingLimit(socLevels.apiData?.socTarget);
+            }
+        }
 
 
         // trigger a re-render
@@ -297,6 +305,12 @@ function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: Car
             await storageHandler.storeApiData(hvacStatus, carModel.getVin(), 'hvacStatus');
         }
 
+        socLevels = await (account as RenaultAccount).fetchSoCLevels(carModel.getVin());
+        if (!socLevels.hasError) {
+            remoteApiHandler.setChargingLimit(socLevels.apiData?.socTarget);
+            await storageHandler.storeApiData(socLevels, carModel.getVin(), 'socLevels');
+        }
+
         // trigger a re-render
         setApiHandler(remoteApiHandler);
         // in case the data has been fetched from locale
@@ -345,8 +359,7 @@ function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: Car
     const mockCarType = new CarType({
         brand: { name: '', display_name: '' },
         model: { name: '', display_name: '', engine_type: '' },
-        battery: { size: 0, max_ac_power: 0, max_dc_power: -1 },
-        chargingLimit: 0
+        battery: { size: 0, max_ac_power: 0, max_dc_power: -1 }
     });
     const [carType, setCarType] = useState<CarType>(mockCarType);
 
