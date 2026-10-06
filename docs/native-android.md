@@ -77,6 +77,55 @@ Java 17 et les dépôts Maven des nouveaux modules sont réglés par le plugin G
 - Plusieurs widgets sur la même voiture ne font qu'une requête.
 - Voiture du widget : celle configurée (`widget_vin_<id>`), sinon la première du compte.
 
+### Parcours d'un rafraîchissement
+
+1. Un déclencheur : la tâche périodique, `APPWIDGET_UPDATE` (pose du widget, redémarrage), le bouton de l'heure
+   (`REFRESH_WIDGET_ACTION`), l'app RN (`setData` après 0,5 s ou `refreshWidgets`), le choix de la voiture.
+2. `KelecMainWIdget.onReceive` → `WidgetRefreshWorker.refreshNow` → tâche unique `kelec_widget_refresh_now`.
+3. `WidgetRefreshWorker.doWork` → `WidgetUpdater.update(tous les widgets)` :
+   - lit les préférences et le compte (`SharedStore`) ;
+   - choisit la voiture de chaque widget ;
+   - charge chaque voiture une seule fois avec `VehicleLoader.load` ;
+   - construit les vues (`KelecWidgetViews`) et les applique (`AppWidgetManager.updateAppWidget`).
+4. `VehicleLoader.load(car)` :
+   - voiture de démo → `BatteryStatus.demo()`, sans réseau ;
+   - pas de cookie de session (`SecureStore.renaultCookieValue`) → `NotLoggedIn` ;
+   - sinon `RenaultApiClient.fetchStatus` → enregistre `<vin>_batteryStatus` et le kilométrage → `Loaded` ;
+   - en cas d'échec → dernier statut enregistré (`Loaded(fromCache = true)`), sinon `Unavailable`.
+
+## Affichage du widget
+
+| Cas | Affichage (`KelecWidgetViews`) |
+|---|---|
+| Pas de compte (déconnecté) | « Vous devez d'abord vous connecter sur l'appli » (`not_yet_logged_in`) |
+| Compte sans voiture | « Vous devez d'abord sélectionner une voiture… » (`no_car_added`) |
+| Pas de session Renault | `not_yet_logged_in` |
+| Échec sans cache | « Impossible de se connecter au serveur » (`widget_server_error`) |
+| Statut chargé (réseau ou cache) | Logo du constructeur, modèle, niveau (%), barre de progression, autonomie, heure du statut |
+| Branchée | Libellé de l'état (`EN CHARGE |`, `CHARGE PLANIFIÉE |`, `CHARGE TERMINÉE |`, `NE CHARGE PAS |`, `V2G`, `V2L`), barre « en charge » |
+| En charge | Durée restante (« 2h05 ») et heure de fin, sinon « --h-- » |
+
+- Autonomie : convertie en miles si `convertToMiles`, unité « mi » si `displayMiles` (deux réglages distincts, comme l'app).
+- Toucher le widget ouvre l'app ; toucher l'heure relance le chargement.
+- Une voiture Hyundai est traitée comme Renault (hors périmètre) : elle affiche `not_yet_logged_in`.
+
+## Textes et traductions
+
+- `shared/src/main/res/values*/strings.xml` : textes utilisés par `:shared` (états de charge, erreurs), à lire avec
+  `com.kelec.shared.R` (alias `SharedR` dans l'app).
+- `app/src/main/res/values*/strings.xml` : textes propres à l'app (configuration du widget, textes de prévisualisation du layout).
+- `values/` est le français (langue par défaut), puis 18 langues (`values-en`, `values-de`…). Un nouveau texte doit être
+  ajouté dans les 19 dossiers ; les traductions des widgets iOS (`ios/<langue>.lproj/Localizable.strings`) peuvent servir.
+
+## Compiler et tester
+
+- `cd android && ./gradlew :carapi:test` : tests JUnit du client et des modèles (sans émulateur).
+- `./gradlew :app:assembleDebug` : compile les trois modules.
+- À vérifier sur appareil après un changement du widget : un widget déjà posé s'affiche toujours, le bouton de l'heure,
+  le choix de la voiture, l'historique de kilométrage dans l'app, l'export des logs.
+- Réglages → Debug → « Debug zone » (côté RN) : choix d'une voiture, puis « Battery status » (appel Renault pas à pas)
+  ou « Mileage history » (10 dernières entrées écrites par le widget), avec export des logs en fichier texte.
+
 ## Logs du widget
 
 Comme sur iOS : `SharedHistory.writeWidgetLog` ajoute `{date ISO, message}` à `widgetLogs` (5 derniers jours),
@@ -145,3 +194,5 @@ Les deux stockages utilisent le même fichier de SharedPreferences, `DATA` : les
 | `0222349` | Rafraîchissement dans un `CoroutineWorker` |
 | `b7d41f6`, `790747f` | Ménage (Glance, viewBinding, permission, textes) et corrections de relecture |
 | `24ed12f` | Images des voitures gardées |
+| `6834dfa` | Logs du widget comme sur iOS, export des logs sur Android |
+| `e7eae76` | Correctif de compilation (`IntArray.mapNotNull`) |
