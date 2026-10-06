@@ -4,7 +4,9 @@ import { CarMaker } from "../../../../../lib/clients/accounts/account";
 import { getCarMakerLogo } from "../../../../kelec-model/lib/logos";
 import { useContext } from "react";
 import MainContext from "../../../../../lib/Contexts/MainContext";
-import LoginDefaultView from "../../LoginDefaultView";
+import StepLayout from "../../../../kelec-model/view/StepLayout";
+import { SELECTABLE_CAR_MAKERS } from "../../../models/carMakers";
+import { ViewsAvailable } from "../../../../../Main";
 import KelecCard from "../../../../kelec-model/view/Card";
 import { spacerM, spacerXXL } from "../../../../kelec-model/view/Spacers";
 
@@ -14,38 +16,14 @@ type Props = {
     navigation?: any;
 }
 
-type CarMakerElem = {
-    brand: CarMaker;
-    display: string;
-};
-
-const carMakerList: CarMakerElem[] = [
-    {
-        "brand": CarMaker.ALPINE,
-        "display": "Alpine"
-    },
-    {
-        "brand": CarMaker.DACIA,
-        "display": "Dacia"
-    },
-    {
-        "brand": CarMaker.HYUNDAI,
-        "display": "Hyundai"
-    },
-    {
-        "brand": CarMaker.RENAULT,
-        "display": "Renault"
-    }
-
-];
-
 const CarMakerSelectView = (props: Props) => {
     const { selectedCarMaker, setSelectedCarMaker, navigation } = props;
-    const { currentUser } = useContext(MainContext);
+    const { currentUser, languageHandler, setCurrentView } = useContext(MainContext);
+    const t = (key: string) => languageHandler.getTranslation(key);
 
     const isDarkMode = useColorScheme() === 'dark';
 
-    const carMakerRow = (carMakerElem: CarMakerElem, isSelected: boolean) => {
+    const carMakerRow = (carMakerElem: { brand: CarMaker; display: string }, isSelected: boolean) => {
         return <KelecCard
             isSelected={isSelected}
             onPress={() => {
@@ -69,17 +47,19 @@ const CarMakerSelectView = (props: Props) => {
     }
 
     return (
-        <LoginDefaultView
+        <StepLayout
             testID="carMakerSelectView"
-            title="addCar"
-            subtitle="theCarBrand"
-            helpText="selectTheCarBrand"
+            title={t("addCar")}
+            subtitle={t("theCarBrand")}
+            helpText={t("selectTheCarBrand")}
+            nextLabel={t("next")}
             onNext={() => {
                 if (selectedCarMaker) {
                     navigation.navigate("CredentialsView", { selectedCarMaker: selectedCarMaker });
                 }
             }}
-            shouldDisplayDismissButton={currentUser?.getCars().length > 0}
+            // fermeture seulement s'il y a déjà une voiture à afficher
+            onDismiss={currentUser?.getCars().length > 0 ? () => setCurrentView(ViewsAvailable.LOGGEDIN) : undefined}
         >
             <View
                 style={{
@@ -87,7 +67,7 @@ const CarMakerSelectView = (props: Props) => {
                 }}
             >
                 {
-                    carMakerList.map((carMakerElem) => {
+                    SELECTABLE_CAR_MAKERS.map((carMakerElem) => {
                         const isSelected = selectedCarMaker === carMakerElem.brand;
                         return (
                             carMakerRow(carMakerElem, isSelected)
@@ -95,7 +75,7 @@ const CarMakerSelectView = (props: Props) => {
                     })
                 }
             </View>
-        </LoginDefaultView>
+        </StepLayout>
     );
 };
 

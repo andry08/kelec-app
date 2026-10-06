@@ -17,8 +17,8 @@ import PagerView from "react-native-pager-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CarsViewParamList } from "../CarsPageView";
-import { TfaOrigin } from "../../../../packages/kelec-login/views/Steps/Step2/Tfa/TfaView";
-import { useTheme } from '@react-navigation/native';
+import { TFA_ROUTE } from "../../../../packages/kelec-tfa";
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCarProfile } from "../../../../packages/kelec-car-page/services/useCarProfile";
 import { useCarData } from "../../../../packages/kelec-car-page/services/useCarData";
 import CarViewHeader from "../../../../packages/kelec-car-page/views/CarViewHeader";
@@ -35,12 +35,14 @@ function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: Car
     const { languageHandler } = useContext(MainContext);
 
     const { image, carType, reload: reloadProfile } = useCarProfile(carModel);
+    // au retour d'un autre écran (ex. modèle de la voiture modifié), on relit l'image et le modèle enregistrés
+    useFocusEffect(useCallback(() => { reloadProfile(); }, [reloadProfile]));
 
     const onTfaRequired = useCallback(
         (regToken: string) => {
             if (tfaInProgress.current) return;
             tfaInProgress.current = true;
-            navigation.navigate('TfaView', { regToken, origin: TfaOrigin.CAR_PAGE });
+            navigation.navigate(TFA_ROUTE, { regToken, successMessageKey: 'pullToRefreshCarData' });
         },
         [navigation, tfaInProgress],
     );
@@ -74,8 +76,8 @@ function CarView({ carModel, navigation, account, pagerRef, tfaInProgress }: Car
     });
 
     const carViewContextValues = useMemo(
-        () => ({ carModel, image, apiHandler, carType, loadCarModel: reloadProfile, account }),
-        [carModel, image, apiHandler, revision, carType, reloadProfile, account],
+        () => ({ carModel, image, apiHandler, carType, account }),
+        [carModel, image, apiHandler, revision, carType, account],
     );
 
 
