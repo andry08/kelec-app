@@ -1,6 +1,6 @@
-import { Alert, Share } from "react-native";
-import { DocumentDirectoryPath, writeFile } from "react-native-fs";
+import { Alert } from "react-native";
 import { getWidgetsLogs } from "../../../lib/storage/sharedPlatformsData";
+import { shareTextFile } from "./fileShare";
 
 /** (Debug) Exporte les logs des widgets dans un fichier JSON et ouvre la feuille de partage. */
 export async function exportWidgetLogs(): Promise<void> {
@@ -9,17 +9,5 @@ export async function exportWidgetLogs(): Promise<void> {
         Alert.alert('No logs found');
         return;
     }
-
-    const path = `${DocumentDirectoryPath}/exportLogs.json`;
-    try {
-        await writeFile(path, logs, 'utf8');
-        Share.share({ url: 'file://' + path })
-            .then(res => console.log(res))
-            .catch(err => {
-                Alert.alert('Erreur 2');
-                err && console.log(err);
-            });
-    } catch (e) {
-        Alert.alert('Erreur 1 : ' + e);
-    }
+    await shareTextFile('exportLogs.json', logs, 'application/json');
 }
