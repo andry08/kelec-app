@@ -125,6 +125,71 @@ Côté JS, tout passe par `src/lib/storage/sharedPlatformsData.tsx`. Les appels 
 - `CarModel.registrationNumber` (`ios/Shared/Models.swift`) est optionnel : champ déjà sérialisé par l'app, absent pour certaines voitures.
 - L'entité est partagée avec l'intent Siri/Raccourcis (`LaunchHVACIntent`) : le sous-titre y apparaît aussi.
 
+## Parcours d'un rafraîchissement
+
+### Widgets iOS (écran d'accueil, écran verrouillé)
+
+1. WidgetKit appelle `Provider.timeline(for:in:)` (`KeleciOSWidget.swift`) : à la pose du widget, puis toutes les 15 min
+   (`.after(nextRefresh)`, l'heure exacte reste décidée par iOS), et quand l'app RN appelle `refreshWidgets` ou
+   écrit des données (`setData`, rechargement regroupé après 0,5 s).
+2. `VehicleLoader.loadWidgetData { widgetCar(account:configuredVin:) }` :
+   - préférences (`SharedStore.loadPreferences`) et compte (`SharedStore.loadAccount`) ; pas de compte → widget « non connecté » ;
+   - choix de la voiture : celle configurée sur le widget (`ConfigurationAppIntent.car`), sinon la première ;
+   - image de la voiture (`<vin>/image`) ;
+   - `VehicleLoader.fetchStatus` : `getCarMakerApiClient` (Renault group avec le cookie de session du Keychain,
+     Hyundai avec le mot de passe du Keychain, démo) → `getVehicleInfo(vin:)`.
+3. Succès : `VehicleCache.saveStatus` (cache par VIN) et `SharedHistory.record` (`<vin>_batteryStatus`, kilométrage).
+   Échec : `VehicleCache.loadStatus`, sinon aucune donnée → widget « erreur serveur ».
+4. Une seule entrée par timeline, valable jusqu'au prochain rafraîchissement.
+
+Chaque widget charge sa voiture de son côté : deux widgets sur la même voiture font deux requêtes.
+
+### Widgets Tempo
+
+Même chargement de la voiture, puis `TempoService.fetch()` (API RTE, cache dans `UserDefaults.standard` sous `tempo`),
+seulement si une voiture est affichée.
+
+### Montre
+
+- **Widgets** (`KelecWatchOSWidget.swift`, `StaticConfiguration`) : même parcours, avec `watchCar` (voiture choisie dans
+  les Réglages de l'app de la montre, sinon la première). Les données viennent de la synchro iPhone → montre.
+- **App** : `ContentView` lit le compte (une page par voiture, puis les Réglages) et se recharge à chaque synchro
+  (`WatchSync.lastSyncDate`). `CarViewModel.load()` affiche d'abord le cache (`VehicleLoader.cachedStatus`), puis le
+  statut chargé ; `refresh()` recharge aussi les widgets de la montre.
+
+### Intent Siri / Raccourcis (`LaunchHVACIntent`)
+
+Retrouve la voiture par VIN dans le compte, envoie `sendHVACCommand` (`launchHvac` du client du constructeur)
+et répond par un dialogue traduit (`informationSent`, `preHeatLaunched` ou `error`, `commandSendError`).
+
+## Affichage des widgets
+
+`CarWidgetStateView` (`Shared/WidgetComponents.swift`) choisit l'état avant d'afficher le contenu :
+
+| Cas | Affichage |
+|---|---|
+| Pas de compte | `widgetNotLoggedIn` (« Vous devez d'abord vous connecter sur l'appli ») |
+| Compte sans voiture | `widgetNoCarSelected` |
+| Aucune donnée (échec sans cache) | `widgetServerError` (« Impossible de se connecter au serveur ») |
+| Données (réseau ou cache) | Contenu du widget ci-dessous |
+
+| Widget | Contenu |
+|---|---|
+| Petit (accueil) | Modèle, éclair si branchée, niveau (%), puis durée restante (« 2h05 ») en charge, sinon autonomie |
+| Moyen (accueil) | Logo du constructeur, modèle, cadenas ouvert si non verrouillée, niveau, barre de charge (limite de charge), puissance instantanée (> 0,5 kW), état et autonomie, heure du statut ; branchée : durée restante et heure de fin ; image de la voiture |
+| Moyen « Alternative » | Mêmes données, autre mise en page (`MediumAlt1`) |
+| Écran verrouillé en ligne | Icône d'état (`carStatusIcon`) et niveau |
+| Écran verrouillé rectangulaire | Icône d'état, modèle, niveau et autonomie |
+| Écran verrouillé rond (et « Alternative ») | Jauge du niveau ; logique d'icône inversée, gardée telle quelle (voir les décisions) |
+| Tempo (1 ou 2 jours) | Couleur du jour (et du lendemain) et prix HP / HC, avec les données de la voiture |
+| Montre | Rond, en ligne, rectangulaire (comme l'écran verrouillé), coin : niveau et barre de progression |
+
+- Couleur de charge (`ApiHandler.chargingColour`) : vert, orange en V2G / V2L ; gris ou noir quand elle n'est pas branchée.
+- Durée restante : « --h-- » si elle ne charge pas ou est pleine (`chargingTimeText`).
+- Autonomie convertie selon `AppPreferences`, unité « mi » si `displayMiles` (`getUnitsText`).
+- Fond blanc des widgets (iOS 17 / watchOS 10) : `widgetBackground()`.
+- Previews Xcode : `SimpleEntry.previewStates` montre les 5 états de `PreviewData`.
+
 ## Package `renaultApi` (`ios/Packages/RenaultApi`)
 
 - Ancien dépôt `github.com/kelec-public/renault-api-swift-client` (1.0.9), repris avec le correctif du crash portugais.
@@ -144,6 +209,25 @@ Côté JS, tout passe par `src/lib/storage/sharedPlatformsData.tsx`. Les appels 
 - Les fichiers ne contiennent plus le doublon de `error`. Les erreurs de traduction existantes (catalan, croate, norvégien, tchèque, italien) sont corrigées.
 - Montre et Siri/Raccourcis : « préchauffage » devient « confort thermique » en français (`preHeatLaunched`, `launchPreHeat`, `launchPreHeat ${car}`, `areYouSureYouWantToLaunchPreheating`). Les clés ne changent pas, et les autres langues et `localizations.json` non plus.
 - La clé RN `isSelectedAsDefault` de `localizations.json` n'est plus utilisée (fichier non modifié).
+- Ajouter un texte : une clé (pas une phrase) dans les 19 `Localizable.strings`, puis `Text("clé")` ou `localized("clé")`.
+  Les fichiers doivent être membres des targets qui l'affichent (app, widgets iOS, widgets de la montre).
+
+## Compiler et tester
+
+- Projet : `ios/Kelec.xcworkspace` (CocoaPods : `cd ios && pod install`). Schémas : `Kelec` (app, widgets iOS, intent),
+  `KeleciOSWidgetExtension`, `KelecWatchOs Watch App`, `KelecWatchOSWidgetsExtension`, `renaultApi`.
+- Package seul : `cd ios/Packages/RenaultApi && swift build` (plateforme macOS déclarée).
+- Pendant un refactor, sans build complet : `swiftc -typecheck` par target (voir les décisions).
+- Ajouter un fichier à `Shared/` : l'ajouter aux targets avec la gem `xcodeproj`, pas à la main dans le `pbxproj`.
+- À vérifier sur appareil après un changement :
+  - un widget déjà posé s'affiche toujours ; « Modifier le widget » propose les voitures (nom, plaque) ;
+  - widgets en langue autre que le français (ex. portugais, qui plantait) ;
+  - synchro de la montre depuis Réglages → « Synchroniser avec l'Apple Watch », app de la montre fermée ;
+  - choix de la voiture des widgets de la montre (Réglages de la montre) ;
+  - Siri / Raccourcis : « confort thermique » sur une voiture.
+- Débogage : Réglages → Debug → « export widget logs » (`widgetLogs`, 5 jours, messages de `VehicleLoader`,
+  `getCarMakerApiClient` et du client Renault), et « Debug zone » (choix d'une voiture, « Battery status »
+  pas à pas, « Mileage history » : 10 dernières entrées de `<vin>_mileageHistory`, export des logs en texte).
 
 ## Commits
 
