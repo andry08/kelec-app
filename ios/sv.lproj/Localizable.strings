@@ -35,37 +35,34 @@
 "| %lldkm" = "| %lldkm";
 
 /* No comment provided by engineer. */
-"Ajoutez un véhicule sur l'appli sur iPhone" = "Lägg till en bil på appen";
+"watchAddVehicleOnIphone" = "Lägg till en bil på appen";
 
 /* No comment provided by engineer. */
-"error" = "error";
+"widgetServerError" = "Kunde inte ansluta till servern";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur" = "Kunde inte ansluta till servern";
+"carMakerServerError %@" = "Kunde inte ansluta till servern %@";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur %@" = "Kunde inte ansluta till servern %@";
+"watchOpenIphoneToSync" = "Öppna appen på iPhone för att synkronisera";
 
 /* No comment provided by engineer. */
-"Ouvrez l'appli sur l'iPhone pour synchroniser" = "Öppna appen på iPhone för att synkronisera";
+"refresh" = "Uppdatera";
 
 /* No comment provided by engineer. */
-"Rafraîchir" = "Uppdatera";
+"widgetHomeScreenDescription" = "Visar information om din E-Tech Renault på din hemskärm";
 
 /* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil" = "Visar information om din E-Tech Renault på din hemskärm";
-
-/* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage" = "Visar information om din E-Tech Renault på din låsskärm";
+"widgetLockScreenDescription" = "Visar information om din E-Tech Renault på din låsskärm";
 
 /* No comment provided by engineer. */
 "Renault E-Tech" = "Renault E-Tech";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord sélectionner une voiture sur l'appli" = "Du måste först lägg till en bil på appen";
+"widgetNoCarSelected" = "Du måste först lägg till en bil på appen";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord vous connecter sur l'appli" = "Du måste först logga in på appen";
+"widgetNotLoggedIn" = "Du måste först logga in på appen";
 
 "CHARGE PLANIFIÉE | " = "SCHEMALAGD LADDNING | ";
 
@@ -104,3 +101,14 @@
 "confirm" = "Bekräfta";
 
 "cancel" = "Avbryt";
+
+"tempoCarServerError" = "Kunde inte ansluta till Renault-servern";
+"tempoRteServerError" = "Kunde inte ansluta till RTE-servern";
+"tempoLoadingError" = "FEL VID INLÄSNING AV DATA";
+"watchCarLocationError" = "Kunde inte hämta bilens position";
+"tempoLockScreenWidgetDescription" = "Tempo-indikator";
+"tempoWidgetDescription" = "Visar information om din E-Tech Renault på din hemskärm med Tempo-indikatorn";
+"tempo2DaysWidgetDescription" = "Visar information om din E-Tech Renault på din hemskärm med Tempo-indikatorn för 2 dagar";
+"watchWidgetDescription" = "Laddningsnivå för din Renault E-Tech";
+"watchSettings" = "Inställningar";
+"watchWidgetCar" = "Bil som visas i widgetar";

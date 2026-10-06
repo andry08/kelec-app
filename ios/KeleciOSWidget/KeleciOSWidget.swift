@@ -14,106 +14,21 @@ import renaultApi
 
 struct Provider: AppIntentTimelineProvider {
   func placeholder(in context: Context) -> SimpleEntry {
-    let mockAccount = UserAccount(selectedCar: "mock", cars: [])
-    let mockRenaultBatteryStatus = RenaultBatteryStatus(timestamp: "2022-01-01", batteryLevel: 50, batteryAutonomy: 50, batteryCapacity: 0, batteryAvailableEnergy: 10, plugStatus: 1, chargingStatus: 1.0,  chargingRemainingTime: 50, chargingInstantaneousPower: 10)
-    let mockData = RenaultApiHandler(batteryStatus: mockRenaultBatteryStatus)
-    let mockUserCar = UserCar(email: "", password: "", carMaker: "renault")
-    return SimpleEntry(date: Date(), account: mockAccount, userCar: mockUserCar, carName: "Megane E-Tech", image: "megane", appPreferences: nil, apiHandler: mockData)
+    SimpleEntry.preview
   }
   
   func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-    let mockAccount = UserAccount(selectedCar: "mock", cars: [])
-    let mockRenaultBatteryStatus = RenaultBatteryStatus(timestamp: "2022-01-01", batteryLevel: 50, batteryAutonomy: 50, batteryCapacity: 0, batteryAvailableEnergy: 10, plugStatus: 1, chargingStatus: 1.0,  chargingRemainingTime: 50, chargingInstantaneousPower: 10)
-    let mockData = RenaultApiHandler(batteryStatus: mockRenaultBatteryStatus)
-    let mockUserCar = UserCar(email: "", password: "", carMaker: "renault")
-    return SimpleEntry(date: Date(), account: mockAccount, userCar: mockUserCar, carName: "Megane E-Tech", image: "megane", appPreferences: nil, apiHandler: mockData)
+    SimpleEntry.preview
   }
   
   func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry>  {
     let currentDate = Date()
     let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate)!
-    
-    // to store the main user account
-    var userAccount: UserAccount? = nil
-    // to store the car selected for the widgets
-    var userCar: UserCar? = nil
-    // to store the fetched api data
-    var apiHandler: ApiHandler? = nil
-    // to store the app preferences (use miles instead of km etc..)
-    var appPreferences: AppPreferences? = nil
-    // to store the car name
-    var carName: String = ""
-    // to store the car image
-    var carImage: String = "" // base 64 image
-    
-    if let userBundle = UserDefaults.init(suiteName: "group.kelyanselme.MyRenaultPlus") {
-      // try to get the account
-      
-      userAccount = getUserAccount(userBundle: userBundle)
-      
-      // try to get the app preferences
-      appPreferences = getUserAppPreferences(userBundle: userBundle)
-      
-      // write log
-      if (appPreferences == nil){
-        writeWidgetLog(message: "APP PREFERENCES POSSIBLY FOUND BUT COULDN'T BE DECODED")
-      }else{
-        writeWidgetLog(message: "APP PREFERENCES FOUND AND DECODED")
-      }
+    let data = await VehicleLoader.loadWidgetData { account in
+      widgetCar(account: account, configuredVin: configuration.car?.id)
     }
-    
-    // if the user is logged, we can proceed
-    if (userAccount != nil){
-      // first, find which car is selected for widgets
-      let cars = userAccount?.cars ?? []
-      
-      if let configuredVin = configuration.car?.id {
-        userCar = cars.first{ $0.car?.vin == configuredVin }
-        if userCar == nil {
-          writeWidgetLog(message: "Configured car not found (vin: \(configuredVin), falling back to first car")
-          userCar = cars.first
-        }
-      } else {
-        writeWidgetLog(message: "No car configured, using first available car")
-        userCar = cars.first
-      }
-      // then update the car name
-      carName = userCar?.car?.model ?? "ERROR"
-      // then get the image
-      if let userBundle = UserDefaults.init(suiteName: "group.kelyanselme.MyRenaultPlus"){
-        carImage = getCarImage(vin: userCar?.car?.vin ?? "", userBundle: userBundle)
-      }
-      
-      // keep going only if the userCar is not undefined
-      if let userCar = userCar {
-        let carMaker = parseCarMaker(carMaker: userCar.carMaker)
-        var client = getCarMakerApiClient(usercar: userCar)
-          let semaphore = DispatchSemaphore(value: 0)
-          do {
-            // try to get password from keychain
-            let passwordFromKeychain = try getPasswordFromKeychain(key: "\(userCar.car?.vin ?? "")_password")
-            client.setPassword(password: passwordFromKeychain)
-            writeWidgetLog(message: "Crypted password loaded")
-            let fetchedApiHandler = try await client.getVehicleInfo(vin: userCar.car?.vin ?? "")
-            apiHandler = fetchedApiHandler
-            writeWidgetLog(message: "Data successfully fecthed")
-            zeServices.saveLoadedCar(vin: userCar.car?.vin ?? "", zecar: fetchedApiHandler)
-            semaphore.signal()
-          } catch {
-            // Fallback to local data if fetching fails
-            writeWidgetLog(message: "Loading cache data")
-            apiHandler = zeServices.loadSavedCar(vin: userCar.car?.vin ?? "", carMaker: carMaker)
-            semaphore.signal()
-          }
-          semaphore.wait()
-        
-
-      }
-    }
-    
-    let entry = SimpleEntry(date: currentDate, account: userAccount, userCar: userCar, carName: carName, image: carImage, appPreferences: appPreferences, apiHandler: apiHandler)
-    let timeline = Timeline(entries: [entry], policy: .after(nextRefresh))
-    return timeline
+    let entry = SimpleEntry(date: currentDate, data: data)
+    return Timeline(entries: [entry], policy: .after(nextRefresh))
   }
 }
 
@@ -127,40 +42,43 @@ struct SimpleEntry: TimelineEntry {
   let apiHandler: ApiHandler?
 }
 
+extension SimpleEntry {
+  init(date: Date, data: CarWidgetData) {
+    self.init(date: date, account: data.account, userCar: data.userCar, carName: data.carName, image: data.image, appPreferences: data.appPreferences, apiHandler: data.apiHandler)
+  }
+
+  static var preview: SimpleEntry {
+    SimpleEntry(date: Date(), account: PreviewData.account, userCar: PreviewData.userCar, carName: PreviewData.carName, image: PreviewData.image, appPreferences: nil, apiHandler: PreviewData.apiHandler)
+  }
+
+  // one entry per state of PreviewData.apiHandlerStates; `cars` replaces the car of the first entries
+  static func previewStates(cars: [(userCar: UserCar, name: String)] = []) -> [SimpleEntry] {
+    PreviewData.apiHandlerStates.enumerated().map { index, apiHandler in
+      let car = index < cars.count ? cars[index] : (PreviewData.userCar, PreviewData.carName)
+      return SimpleEntry(date: Date() - 60 * 12, account: PreviewData.account, userCar: car.userCar, carName: car.name, image: PreviewData.image, appPreferences: nil, apiHandler: apiHandler)
+    }
+  }
+}
+
 struct KeleciOSWidgetEntryView : View {
   var entry: Provider.Entry
-  var alternative: Int = 0
+  var style: WidgetStyle = .standard
   @Environment(\.widgetFamily) var family
   var body: some View{
     switch family{
     case .systemSmall:
-      if(entry.account == nil){
-        Text("Vous devez d'abord vous connecter sur l'appli")
-      }else if(entry.account?.selectedCar ?? "" == ""){
-        Text(String(localized: "Vous devez d'abord sélectionner une voiture sur l'appli"))
-      }else if(entry.apiHandler == nil){
-        Text("Impossible de se connecter au serveur")
-      }else{
-        iosWidgetEntryViewSmall(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value:entry.carName, appPreferences: entry.appPreferences)
+      CarWidgetStateView(account: entry.account, userCar: entry.userCar, apiHandler: entry.apiHandler) { _, _, apiHandler in
+        SmallCarWidgetView(apiHandler: apiHandler, carName: entry.carName, image: entry.image, appPreferences: entry.appPreferences)
+          .widgetBackground()
       }
     case .systemMedium:
-      if(entry.account == nil){
-        Text(String(localized: "Vous devez d'abord vous connecter sur l'appli"))
-      }
-      else if(entry.account?.selectedCar ?? "" == ""){
-        Text(String(localized: "Vous devez d'abord sélectionner une voiture sur l'appli"))
-      }else if(entry.account?.selectedCar ?? "" != "" && entry.apiHandler == nil){
-        Text(String(localized: "Impossible de se connecter au serveur"))
-      }else{
-        switch (self.alternative){
-        case 0:
-          iosWidgetEntryViewMedium(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value:entry.carName, alternative: alternative, appPreferences: entry.appPreferences)
-        case 1:
-          iosAlt1EntryViewMedium(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value:entry.carName, alternative: alternative, appPreferences: entry.appPreferences)
-
-        default:
-          iosWidgetEntryViewMedium(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value:entry.carName, alternative: alternative, appPreferences: entry.appPreferences)
-
+      CarWidgetStateView(account: entry.account, userCar: entry.userCar, apiHandler: entry.apiHandler) { _, userCar, apiHandler in
+        if self.style == .alternative {
+          MediumCarWidgetAltView(apiHandler: apiHandler, carName: entry.carName, image: entry.image, appPreferences: entry.appPreferences)
+            .widgetBackground()
+        } else {
+          MediumCarWidgetView(apiHandler: apiHandler, userCar: userCar, carName: entry.carName, image: entry.image, appPreferences: entry.appPreferences)
+            .widgetBackground()
         }
       }
     default:
@@ -177,58 +95,46 @@ struct KeleciOSWidget: Widget {
       KeleciOSWidgetEntryView(entry: entry)
     }
 
-    .contentMarginsDisabledIfAvailable()
+    .contentMarginsDisabled()
     .configurationDisplayName("Renault E-Tech")
-    .description(String(localized: "Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil"))
+    .description(String(localized: "widgetHomeScreenDescription"))
     .supportedFamilies([.systemMedium, .systemSmall])
   }
 }
 
-struct KeleciOSWidget2: Widget {
+struct KeleciOSWidgetAlternative: Widget {
   let kind: String = "KeleciOSWidget2"
   
   var body: some WidgetConfiguration {
     AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-      KeleciOSWidgetEntryView(entry: entry, alternative: 1)
+      KeleciOSWidgetEntryView(entry: entry, style: .alternative)
     }
 
-    .contentMarginsDisabledIfAvailable()
+    .contentMarginsDisabled()
     .configurationDisplayName("Renault E-Tech")
-    .description(String(localized: "Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil"))
+    .description(String(localized: "widgetHomeScreenDescription"))
     .supportedFamilies([.systemMedium])
   }
 }
 
 struct KelecLockScreenWidgetEntryView:View {
   var entry: Provider.Entry
-  var alternative: Int = 0
+  var style: WidgetStyle = .standard
   @Environment(\.widgetFamily) var family
   var body: some View {
     switch family{
     case .accessoryInline:
-      if(entry.account) == nil{
-        Text(String(localized: "Vous devez d'abord vous connecter sur l'appli"))
-      }
-      else if(entry.account?.selectedCar ?? "" == ""){
-        Text(String(localized: "Vous devez d'abord sélectionner une voiture sur l'appli"))
-      }else if(entry.apiHandler == nil){
-        Text(String(localized: "Impossible de se connecter au serveur"))
-      }else{
-        KelecLockScreenInlineView(apiHandler: entry.apiHandler!)
+      CarWidgetStateView(account: entry.account, userCar: entry.userCar, apiHandler: entry.apiHandler) { _, _, apiHandler in
+        KelecLockScreenInlineView(apiHandler: apiHandler)
       }
     case .accessoryRectangular:
-      if(entry.account) == nil{
-        Text(String(localized: "Vous devez d'abord vous connecter sur l'appli"))
-      }
-      else if(entry.account?.selectedCar ?? "" == ""){
-        Text(String(localized: "Vous devez d'abord sélectionner une voiture sur l'appli"))
-      }else if(entry.apiHandler == nil){
-        Text(String(localized: "Impossible de se connecter au serveur"))
-      }else{
-        KelecLockScreenRectangularEntryView(apiHandler: entry.apiHandler!, value: entry.carName, appPreferences: entry.appPreferences)
+      CarWidgetStateView(account: entry.account, userCar: entry.userCar, apiHandler: entry.apiHandler) { _, _, apiHandler in
+        KelecLockScreenRectangularView(apiHandler: apiHandler, carName: entry.carName, appPreferences: entry.appPreferences)
+          .widgetBackground()
       }
     case .accessoryCircular:
-      KelecLockScreenCircularEntryView(apiHandler: entry.apiHandler, alternative: alternative)
+      KelecLockScreenCircularView(apiHandler: entry.apiHandler, style: style)
+        .widgetBackground()
     default:
       Text("error")
     }
@@ -243,7 +149,7 @@ struct KelecLockScreenWidget: Widget {
       KelecLockScreenWidgetEntryView(entry: entry)
     }
     .configurationDisplayName("Renault E-Tech")
-    .description(LocalizedStringKey("Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage").stringValue())
+    .description(localized("widgetLockScreenDescription"))
     .supportedFamilies([.accessoryRectangular, .accessoryInline, .accessoryCircular])
   }
 }
@@ -253,10 +159,10 @@ struct KelecLockScreenWidgetAlternative: Widget{
   
   var body: some WidgetConfiguration {
     AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-      KelecLockScreenWidgetEntryView(entry: entry, alternative: 1)
+      KelecLockScreenWidgetEntryView(entry: entry, style: .alternative)
     }
     .configurationDisplayName("Renault E-Tech")
-    .description(LocalizedStringKey("Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage").stringValue())
+    .description(localized("widgetLockScreenDescription"))
     .supportedFamilies([.accessoryCircular])
   }
   
@@ -271,21 +177,3 @@ extension Image{
     self = Image(uiImage: uiImg)
   }
 }
-
-
-
-extension WidgetConfiguration
-{
-  func contentMarginsDisabledIfAvailable() -> some WidgetConfiguration
-  {
-    if #available(iOSApplicationExtension 17.0, *)
-    {
-      return self.contentMarginsDisabled()
-    }
-    else
-    {
-      return self
-    }
-  }
-}
-

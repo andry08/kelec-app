@@ -42,37 +42,34 @@
 "| %lldkm" = "| %lldkm";
 
 /* No comment provided by engineer. */
-"Ajoutez un véhicule sur l'appli sur iPhone" = "Fügen Sie der App auf dem iPhone ein Fahrzeug hinzu";
+"watchAddVehicleOnIphone" = "Fügen Sie der App auf dem iPhone ein Fahrzeug hinzu";
 
 /* No comment provided by engineer. */
-"error" = "error";
+"widgetServerError" = "Es kann keine Verbindung zum Server hergestellt werden";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur" = "Es kann keine Verbindung zum Server hergestellt werden";
+"carMakerServerError %@" = "Es kann keine Verbindung zum Server hergestellt werden %@";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur %@" = "Es kann keine Verbindung zum Server hergestellt werden %@";
+"watchOpenIphoneToSync" = "Öffnen Sie die App auf dem iPhone, um sie zu synchronisieren";
 
 /* No comment provided by engineer. */
-"Ouvrez l'appli sur l'iPhone pour synchroniser" = "Öffnen Sie die App auf dem iPhone, um sie zu synchronisieren";
+"refresh" = "Aktualisierung";
 
 /* No comment provided by engineer. */
-"Rafraîchir" = "Aktualisierung";
+"widgetHomeScreenDescription" = "Führt Informationen von Ihrem Renault E-Tech auf Ihrem Startbildschirm zusammen";
 
 /* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil" = "Führt Informationen von Ihrem Renault E-Tech auf Ihrem Startbildschirm zusammen";
-
-/* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage" = "Führt Informationen von Ihrem Renault E-Tech auf Ihrem Sperrbildschirm zusammen";
+"widgetLockScreenDescription" = "Führt Informationen von Ihrem Renault E-Tech auf Ihrem Sperrbildschirm zusammen";
 
 /* No comment provided by engineer. */
 "Renault E-Tech" = "Renault E-Tech";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord sélectionner une voiture sur l'appli" = "Sie müssen zunächst in der App ein Auto auswählen";
+"widgetNoCarSelected" = "Sie müssen zunächst in der App ein Auto auswählen";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord vous connecter sur l'appli" = "Sie müssen sich zunächst bei der App anmelden";
+"widgetNotLoggedIn" = "Sie müssen sich zunächst bei der App anmelden";
 
 "CHARGE PLANIFIÉE | " = "GEPLANTE LADUNG | ";
 
@@ -111,3 +108,14 @@
 "confirm" = "Bestätigen";
 
 "cancel" = "Abbrechen";
+
+"tempoCarServerError" = "Es kann keine Verbindung zum Renault-Server hergestellt werden";
+"tempoRteServerError" = "Es kann keine Verbindung zum RTE-Server hergestellt werden";
+"tempoLoadingError" = "FEHLER BEIM LADEN DER DATEN";
+"watchCarLocationError" = "Standort des Fahrzeugs kann nicht abgerufen werden";
+"tempoLockScreenWidgetDescription" = "Tempo-Anzeige";
+"tempoWidgetDescription" = "Führt Informationen von Ihrem Renault E-Tech mit der Tempo-Anzeige auf Ihrem Startbildschirm zusammen";
+"tempo2DaysWidgetDescription" = "Führt Informationen von Ihrem Renault E-Tech mit der Tempo-Anzeige für 2 Tage auf Ihrem Startbildschirm zusammen";
+"watchWidgetDescription" = "Ladestand Ihres Renault E-Tech";
+"watchSettings" = "Einstellungen";
+"watchWidgetCar" = "Fahrzeug in den Widgets";

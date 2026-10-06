@@ -62,7 +62,7 @@ beforeEach(async () => {
     await AsyncStorage.clear();
     const car1 = new RenaultCar('vin1', 'model1', 'image1', CarMaker.RENAULT, 'AA0001AA');
     const account: Account = new Account('email', 'passwod', CarMaker.RENAULT, car1);
-    const userAccount: UserAccount = new UserAccount('vin1', [account]);
+    const userAccount: UserAccount = new UserAccount([account]);
     await AsyncStorage.setItem('account', JSON.stringify(userAccount));
     await AsyncStorage.setItem('kelecNextGen', "true");
 });
@@ -328,6 +328,11 @@ test('should send the account to the apple watch', async () => {
     const actionButton = screen.getByTestId('testSettingRowwatch');
     await user.press(actionButton);
     await waitFor(() => expect(mockSendDataToAppleWatch).toHaveBeenCalled());
+
+    // le compte part sans mot de passe, et pas de mot de passe Renault (cookies de session)
+    const [sentAccount, , , sentPasswords] = mockSendDataToAppleWatch.mock.calls[0];
+    expect(sentAccount.cars[0].password).toBe('');
+    expect(sentPasswords).toEqual({});
 });
 
 describe('export widgets logs', () => {
@@ -494,7 +499,7 @@ describe('should display the names on top of settingsview', () => {
         await AsyncStorage.clear();
         const car1 = new RenaultCar('vin1', 'model1', 'image1', CarMaker.RENAULT, 'AA0001AA');
         const account: RenaultAccount = new RenaultAccount('email', 'password', 'accountID', car1, 'firstName', 'lastName');
-        const userAccount: UserAccount = new UserAccount('vin1', [account]);
+        const userAccount: UserAccount = new UserAccount([account]);
         await AsyncStorage.setItem('account', JSON.stringify(userAccount));
         await AsyncStorage.setItem('kelecNextGen', 'true');
 

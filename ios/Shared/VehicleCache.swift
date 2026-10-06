@@ -1,0 +1,91 @@
+//
+//  VehicleCache.swift
+//  Kelec
+//
+//  Last fetched car status and location.
+//  Kept in the App Group: the app and the widgets of a device share the cache (the last fetch wins).
+//  The RN app reads the last Renault status through SharedHistory (`<vin>_batteryStatus`), written at the same time.
+//  The JSON format and the keys are already stored on the devices: keep them.
+//
+
+import Foundation
+import renaultApi
+
+private protocol CachedVehicle: Codable {
+  var vin: String { get }
+}
+
+private struct RenaultSaved: CachedVehicle {
+  var vin: String
+  var batteryStatus: RenaultBatteryStatus
+}
+
+private struct HyundaiSaved: CachedVehicle {
+  var vin: String
+  var hyundaiStatus: HyundaiLayerReturn
+}
+
+struct SavedLocation: Codable {
+  var vin: String
+  var latitude: Latitude
+  var longitude: Longitude
+}
+
+enum VehicleCache {
+  private static var store: UserDefaults {
+    AppGroup.userDefaults ?? .standard
+  }
+
+  static func saveStatus(vin: String, apiHandler: ApiHandler) {
+    switch apiHandler.getVehicleData() {
+    case .renault(let batteryStatus):
+      upsert(RenaultSaved(vin: vin, batteryStatus: batteryStatus), key: StorageKey.renaultCarsCache)
+    case .hyundai(let hyundaiStatus):
+      upsert(HyundaiSaved(vin: vin, hyundaiStatus: hyundaiStatus), key: StorageKey.hyundaiCarsCache)
+    case .demo:
+      // no need to save anything for the demo car
+      return
+    }
+  }
+
+  static func loadStatus(vin: String, carMaker: CarMaker) -> ApiHandler? {
+    switch carMaker {
+    case .RENAULT, .DACIA, .ALPINE:
+      guard let saved = load([RenaultSaved].self, key: StorageKey.renaultCarsCache)?.first(where: { $0.vin == vin }) else { return nil }
+      return RenaultApiHandler(batteryStatus: saved.batteryStatus)
+    case .HYUNDAI:
+      guard let saved = load([HyundaiSaved].self, key: StorageKey.hyundaiCarsCache)?.first(where: { $0.vin == vin }) else { return nil }
+      return HyundaiApiHandler(apiData: saved.hyundaiStatus)
+    case .DEMO:
+      return DemoApiHandler()
+    }
+  }
+
+  static func saveLocation(vin: String, latitude: Latitude, longitude: Longitude) {
+    if let encoded = try? JSONEncoder().encode(SavedLocation(vin: vin, latitude: latitude, longitude: longitude)) {
+      store.set(encoded, forKey: StorageKey.savedLocation(vin: vin))
+    }
+  }
+
+  static func loadLocation(vin: String) -> SavedLocation? {
+    load(SavedLocation.self, key: StorageKey.savedLocation(vin: vin))
+  }
+
+  // replaces the car with the same vin (keeping its position), else appends it
+  private static func upsert<T: CachedVehicle>(_ vehicle: T, key: String) {
+    var vehicles = load([T].self, key: key) ?? []
+    if let index = vehicles.firstIndex(where: { $0.vin == vehicle.vin }) {
+      vehicles[index] = vehicle
+    } else {
+      vehicles.append(vehicle)
+    }
+    if let encoded = try? JSONEncoder().encode(vehicles) {
+      store.set(encoded, forKey: key)
+    }
+  }
+
+  private static func load<T: Decodable>(_ type: T.Type, key: String) -> T? {
+    guard let data = store.data(forKey: key) else { return nil }
+    return try? JSONDecoder().decode(type, from: data)
+  }
+}

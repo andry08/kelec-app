@@ -14,11 +14,11 @@ import renaultApi
 struct BatteryCardView: View{
   @Environment(\.isLuminanceReduced) var isLuminanceReduced
   var refreshApi: () -> Void
-  var imageUrl: URL
+  var launchHVAC: () async -> Bool
+  var imageUrl: URL?
   var apiHandler: ApiHandler
   var appPreferences: AppPreferences?
   var carMaker: String
-  var account: UserAccount
   var carAccount: UserCar
   @State var maxChargeOffset:CGFloat = 0
   
@@ -132,7 +132,7 @@ struct BatteryCardView: View{
         HStack(spacing: 5){
           HStack(spacing: 3) {
             Image(systemName: "hourglass")
-            Text(!apiHandler.getIsCarCharging() ? "--h--" : "\(Int(apiHandler.getChargingRemainingTime()/60))h\(apiHandler.getChargingRemainingTime()%60  <= 9 ? "0" : "")\(apiHandler.getChargingRemainingTime()%60)")
+            Text(!apiHandler.getIsCarCharging() ? "--h--" : formatChargingTime(minutes: apiHandler.getChargingRemainingTime()))
           }
           if(apiHandler.getIsCarCharging()){
             HStack(spacing: 3) {
@@ -227,13 +227,13 @@ struct BatteryCardView: View{
       self.shouldShowHVACConfirm = false
       self.isLightLoadingHVAC = true
       // launch HVAC
-      let hasLaunchedHVAC = await launchHVAC(carAccount: self.carAccount)
+      let hasLaunchedHVAC = await launchHVAC()
       if(hasLaunchedHVAC){
-        self.hvacAlertTitle = LocalizedStringKey("informationSent").stringValue()
-        self.hvacAlertMessage = LocalizedStringKey("preHeatLaunched").stringValue()
+        self.hvacAlertTitle = localized("informationSent")
+        self.hvacAlertMessage = localized("preHeatLaunched")
       }else{
-        self.hvacAlertTitle = LocalizedStringKey("error").stringValue()
-        self.hvacAlertMessage = LocalizedStringKey("commandSendError").stringValue()
+        self.hvacAlertTitle = localized("error")
+        self.hvacAlertMessage = localized("commandSendError")
       }
       
       // open modal
@@ -243,36 +243,5 @@ struct BatteryCardView: View{
   }
   
   
-  func launchHVAC(carAccount: UserCar) async -> Bool {
-    let vin = carAccount.car?.vin ?? "VIN"
-    let client = getCarMakerApiClient(usercar: carAccount)
-    
-    do {
-      let hvacLaunchStatus = try await client.launchHvac(vin: vin)
-      return hvacLaunchStatus == true
-    } catch {
-      print("Failed to launch HVAC: \(error)")
-      return false
-    }
-  }
   
-}
-
-//struct BatteryCardView_Previews: PreviewProvider {
-//  static var previews: some View {
-//    BatteryCardView(refreshApi: testRefesh, imageUrl: URL(string: "")!, zecar: AppAttributes(timestamp: "", batteryLevel: 30, batteryAutonomy: 30, batteryCapacity: 03, batteryAvailableEnergy: 03, plugStatus: 0, chargingStatus: 0.2, chargingRemainingTime: 10, chargingInstantaneousPower: 1000.0, batteryTemperature: 0, isLocked: true, chargeLimit: 0), carMaker: "hyundai")
-//  }
-//
-//
-//}
-
-func testRefesh () -> Void{
-  
-}
-
-extension Double{
-  func rounded(toPlaces places:Int) -> Double{
-    let divisor = pow(10.0, Double(places))
-    return (self * divisor).rounded() / divisor
-  }
 }

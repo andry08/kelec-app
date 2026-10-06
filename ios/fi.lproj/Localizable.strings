@@ -42,37 +42,34 @@
 "| %lldkm" = "| %lldkm";
 
 /* No comment provided by engineer. */
-"Ajoutez un véhicule sur l'appli sur iPhone" = "Lisää ajoneuvo sovellukseen iPhonessa";
+"watchAddVehicleOnIphone" = "Lisää ajoneuvo sovellukseen iPhonessa";
 
 /* No comment provided by engineer. */
-"error" = "error";
+"widgetServerError" = "Palvelimeen ei voida muodostaa yhteyttä";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur" = "Palvelimeen ei voida muodostaa yhteyttä";
+"carMakerServerError %@" = "Palvelimeen ei voida muodostaa yhteyttä %@";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur %@" = "Palvelimeen ei voida muodostaa yhteyttä %@";
+"watchOpenIphoneToSync" = "Avaa sovellus iPhonessasi synkronoidaksesi";
 
 /* No comment provided by engineer. */
-"Ouvrez l'appli sur l'iPhone pour synchroniser" = "Avaa sovellus iPhonessasi synkronoidaksesi";
+"refresh" = "Päivitä";
 
 /* No comment provided by engineer. */
-"Rafraîchir" = "Päivitä";
+"widgetHomeScreenDescription" = "Ryhmittelee Renault E-Tech -tietosi aloitusnäytölle";
 
 /* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil" = "Ryhmittelee Renault E-Tech -tietosi aloitusnäytölle";
-
-/* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage" = "Ryhmittelee Renault E-Tech -tietosi lukitusnäytölle";
+"widgetLockScreenDescription" = "Ryhmittelee Renault E-Tech -tietosi lukitusnäytölle";
 
 /* No comment provided by engineer. */
 "Renault E-Tech" = "Renault E-Tech";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord sélectionner une voiture sur l'appli" = "Sinun on ensin valittava auto sovelluksesta";
+"widgetNoCarSelected" = "Sinun on ensin valittava auto sovelluksesta";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord vous connecter sur l'appli" = "Sinun on ensin kirjauduttava sisään sovellukseen";
+"widgetNotLoggedIn" = "Sinun on ensin kirjauduttava sisään sovellukseen";
 
 "CHARGE PLANIFIÉE | " = "AJASTETTU LATAUS | ";
 
@@ -111,3 +108,14 @@
 "confirm" = "Vahvistaa";
 
 "cancel" = "Peruuttaa";
+
+"tempoCarServerError" = "Renault-palvelimeen ei voida muodostaa yhteyttä";
+"tempoRteServerError" = "RTE-palvelimeen ei voida muodostaa yhteyttä";
+"tempoLoadingError" = "VIRHE TIETOJEN LATAAMISESSA";
+"watchCarLocationError" = "Auton sijaintia ei voida hakea";
+"tempoLockScreenWidgetDescription" = "Tempo-ilmaisin";
+"tempoWidgetDescription" = "Ryhmittelee Renault E-Tech -tietosi ja Tempo-ilmaisimen aloitusnäytölle";
+"tempo2DaysWidgetDescription" = "Ryhmittelee Renault E-Tech -tietosi ja 2 päivän Tempo-ilmaisimen aloitusnäytölle";
+"watchWidgetDescription" = "Renault E-Tech -autosi lataustaso";
+"watchSettings" = "Asetukset";
+"watchWidgetCar" = "Widgeteissä näytettävä auto";

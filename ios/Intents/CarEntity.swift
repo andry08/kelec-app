@@ -13,12 +13,19 @@ struct CarEntity: AppEntity, Codable{
   
   var name: String
   var id: String // vin
+  var registrationNumber: String?
   
   static var typeDisplayRepresentation: TypeDisplayRepresentation = "Car"
   static var defaultQuery = CarQuery()
   
+  // the plate when the car has one, the VIN otherwise
+  private var plateOrVin: String {
+    guard let plate = registrationNumber, !plate.isEmpty else { return id }
+    return plate
+  }
+  
   public var displayRepresentation: DisplayRepresentation {
-    DisplayRepresentation(title: "\(name)")
+    DisplayRepresentation(title: "\(name)", subtitle: "\(plateOrVin)")
   }
 }
 
@@ -26,25 +33,16 @@ struct CarEntity: AppEntity, Codable{
 struct CarQuery: EntityQuery{
   
   func entities(for identifiers: [CarEntity.ID]) async throws -> [CarEntity] {
-    if let userBundle = UserDefaults.init(suiteName: "group.kelyanselme.MyRenaultPlus"){
-      // try to get the account
-      let userAccount = getUserAccount(userBundle: userBundle)
-      let allCars = buildCarWidgetEntityFromUserCars(userCars: userAccount?.cars ?? [])
-      
-      return identifiers.compactMap { id in
-        allCars.first(where: {$0.id == id}) ?? allCars.first
-      }
+    let allCars = buildCarWidgetEntityFromUserCars(userCars: SharedStore.loadAccount()?.cars ?? [])
+    
+    // an unknown id (car deleted) returns nothing: widgets then fall back to the first car themselves
+    return identifiers.compactMap { id in
+      allCars.first(where: {$0.id == id})
     }
-    return []
   }
   
   func suggestedEntities() async throws -> [CarEntity] {
-    if let userBundle = UserDefaults.init(suiteName: "group.kelyanselme.MyRenaultPlus"){
-      // try to get the account
-      let userAccount = getUserAccount(userBundle: userBundle)
-      return buildCarWidgetEntityFromUserCars(userCars: userAccount?.cars ?? [])
-    }
-    return []
+    buildCarWidgetEntityFromUserCars(userCars: SharedStore.loadAccount()?.cars ?? [])
   }
   
   func defaultResult() async -> CarEntity? {
@@ -55,7 +53,7 @@ struct CarQuery: EntityQuery{
 
 func buildCarWidgetEntityFromUserCars(userCars: [UserCar]) -> [CarEntity] {
   var carWidgetEntities: [CarEntity] = []
-  userCars.forEach { carWidgetEntities.append(CarEntity(name: $0.car?.model ?? "ERROR", id: $0.car?.vin ?? "ERROR")) }
+  userCars.forEach { carWidgetEntities.append(CarEntity(name: $0.car?.model ?? "ERROR", id: $0.car?.vin ?? "ERROR", registrationNumber: $0.car?.registrationNumber)) }
   return carWidgetEntities
 }
 

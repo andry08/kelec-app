@@ -10,33 +10,14 @@ import SwiftUI
 import WidgetKit
 import renaultApi
 
-struct KelecLockScreenCircularEntryView: View{
-  var apiHandler: ApiHandler?
-  var alternative: Int
-  var body: some View{
-    if #available(iOS 17, watchOS 10, *) {
-      ZStack{
-        KelecLockScreenCircularView(apiHandler: apiHandler, alternative: alternative)
-          .containerBackground(for: .widget) {
-            Color("blanc")
-          }
-      }
-    }else{
-      ZStack{
-        KelecLockScreenCircularView(apiHandler: apiHandler, alternative: alternative)
-      }
-    }
-  }
-}
-
 struct KelecLockScreenCircularView:View{
   var apiHandler: ApiHandler?
-  var alternative: Int
+  var style: WidgetStyle
   var body: some View{
     Gauge(value: Double(apiHandler?.getBatteryLevel() ?? 0) , in: 0...100) {
       Image(systemName: apiHandler?.getIsCarCharging() ?? false  ? (apiHandler?.getIsCarPlugged() ?? false ? "bolt.car.fill" : "bolt") : "car.fill")
     }currentValueLabel: {
-      if(alternative == 1){
+      if(style == .alternative){
         Image(systemName: apiHandler?.getIsCarCharging() ?? false  ? (apiHandler?.getIsCarPlugged() ?? false ? "bolt.car.fill" : "bolt") : "car.fill")
           .resizable()
           .scaledToFit()
@@ -47,17 +28,17 @@ struct KelecLockScreenCircularView:View{
       
     }
     
-    .if(shouldBeCapcity){ view in
+    .if(isCapacityStyle){ view in
       view.gaugeStyle(.accessoryCircularCapacity)
     }
-    .if(!shouldBeCapcity){ view in
+    .if(!isCapacityStyle){ view in
       view.gaugeStyle(.accessoryCircular)}
     .tint(.accentColor)
     .widgetAccentable()
   }
   
-  private var shouldBeCapcity: Bool {
-    return self.alternative == 1
+  private var isCapacityStyle: Bool {
+    return self.style == .alternative
   }
   
 }

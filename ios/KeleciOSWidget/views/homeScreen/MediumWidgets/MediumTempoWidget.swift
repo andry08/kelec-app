@@ -10,26 +10,25 @@ import SwiftUI
 import WidgetKit
 import renaultApi
 
-struct KeleciOSTempoEntryView: View {
+struct TempoWidgetEntryView: View {
   var entry: TempoProvider.Entry
   var twoDays: Bool
   @Environment(\.widgetFamily) var family
   var body: some View{
     switch family{
     case .systemMedium:
-      if(entry.account == nil){
-        Text("Vous devez d'abord vous connecter sur l'appli")
-      }else if(entry.apiHandler == nil){
-        Text("Impossible de se connecter au serveur Renault")
-      } else if (entry.tempoApi == nil){
-        Text("Impossible de se connecter au serveur RTE")
-      }else{
-        if (self.twoDays) {
-          KeleciOSTempoMedium2DaysEntryView(entry: entry)
+      CarWidgetStateView(account: entry.account, userCar: entry.userCar, apiHandler: entry.apiHandler, serverError: "tempoCarServerError") { _, _, apiHandler in
+        if let tempoApi = entry.tempoApi {
+          if (self.twoDays) {
+            MediumTempo2DaysWidgetView(apiHandler: apiHandler, carName: entry.carName, image: entry.image, appPreferences: entry.appPreferences, tempoApi: tempoApi)
+              .widgetBackground()
+          } else {
+            MediumTempoWidgetView(apiHandler: apiHandler, carName: entry.carName, image: entry.image, appPreferences: entry.appPreferences, tempoApi: tempoApi)
+              .widgetBackground()
+          }
         } else {
-          KeleciOSTempoMediumEntryView(entry: entry)
+          Text("tempoRteServerError")
         }
-        
       }
     default:
       Text("error")
@@ -37,110 +36,51 @@ struct KeleciOSTempoEntryView: View {
   }
 }
 
-struct KeleciOSTempoMediumEntryView: View{
-  var entry: TempoEntry
-  var body: some View{
-    if #available(iOS 17, *){
-      ZStack{
-        KeleciOSTempoMediumView(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value: entry.carName,  appPreferences: entry.appPreferences, tempoApi: entry.tempoApi!)
-          .containerBackground(for: .widget) {
-            Color("blanc")
-          }
-      }
-    }else{
-      ZStack{
-        KeleciOSTempoMediumView(date: entry.date, carAccount: entry.account!, apiHandler: entry.apiHandler!, userCar: entry.userCar!, image: entry.image, value: entry.carName,  appPreferences: entry.appPreferences, tempoApi: entry.tempoApi!)
-      }
-    }
-  }
-}
-
-
-
-struct KeleciOSTempoMediumView: View{
-  var date:Date
-  var carAccount: UserAccount
+struct MediumTempoWidgetView: View{
   var apiHandler: ApiHandler
-  var userCar: UserCar
+  var carName: String
   var image: String
-  var value: String
   var appPreferences: AppPreferences?
   var tempoApi: tempoFinalReturn
   var body: some View{
     GeometryReader { geo in
       HStack{
         
-        iosWidgetEntryViewSmall(date: date, carAccount: carAccount, apiHandler: apiHandler, userCar: userCar, image: image, value: value, appPreferences: appPreferences)
+        SmallCarWidgetView(apiHandler: apiHandler, carName: carName, image: image, appPreferences: appPreferences)
+          .widgetBackground()
         .frame(width: geo.size.width/2, height: geo.size.height)
         
         
         VStack{
-          Text(formatDate(date: tempoApi.latestDate))
+          Text(TempoStyle.formatDate(tempoApi.latestDate))
             .font(.title3)
             .fontWeight(.bold)
-            .foregroundStyle(self.getFgColour())
+            .foregroundStyle(TempoStyle.foregroundColour(tempoApi.latestColour))
             .accentColor(.clear)
           Spacer()
-          Text("\(LocalizedStringKey(tempoApi.latestColour).stringValue())")
+          Text("\(localized(tempoApi.latestColour))")
             .font(.title2)
             .fontWeight(.bold)
-            .foregroundStyle(self.getFgColour())
+            .foregroundStyle(TempoStyle.foregroundColour(tempoApi.latestColour))
             .accentColor(.clear)
           Spacer()
-          Text("HP \(String(format: "%.2f", self.getHPPrice())) c/kWh")
+          Text("HP \(String(format: "%.2f", TempoStyle.hpPrice(tempoApi.latestColour))) c/kWh")
             .widgetAccentable(false)
             .font(.caption)
-            .foregroundColor(self.getFgColour())
+            .foregroundColor(TempoStyle.foregroundColour(tempoApi.latestColour))
             
-          Text("HC \(String(format: "%.2f", self.getHCPrice())) c/kWh")
+          Text("HC \(String(format: "%.2f", TempoStyle.hcPrice(tempoApi.latestColour))) c/kWh")
             .font(.caption)
-            .foregroundStyle(self.getFgColour())
+            .foregroundStyle(TempoStyle.foregroundColour(tempoApi.latestColour))
             .accentColor(.clear)
         }
         .padding()
         .frame(width: geo.size.width/2, height: geo.size.height)
-        .foregroundStyle(self.getBgColour())
-        .background(self.getBgColour())
+        .foregroundStyle(TempoStyle.backgroundColour(tempoApi.latestColour))
+        .background(TempoStyle.backgroundColour(tempoApi.latestColour))
         
       }
       
-    }
-  }
-  private func formatDate(date: Date) -> String {
-          let dateFormatter = DateFormatter()
-          dateFormatter.dateFormat = "dd/MM"
-          return dateFormatter.string(from: date)
-      }
-  
-  func getHPPrice()->Float{
-    let client = getRteClient()
-    return client.getHPPrice(colour: self.tempoApi.latestColour)
-  }
-  
-  func getHCPrice()->Float{
-    let client = getRteClient()
-    return client.getHCPrice(colour: self.tempoApi.latestColour)
-  }
-  
-  func getBgColour()->Color{
-    switch(self.tempoApi.latestColour){
-    case "BLUE":
-      return Color.blue
-    case "WHITE":
-      return Color.white
-    case "RED":
-      return Color.red
-    default:
-      return Color.pink
-    }
-  }
-  
-  func getFgColour()->Color{
-    switch(self.tempoApi.latestColour){
-    case "WHITE":
-      return Color.black
-    default:
-      return Color.white
     }
   }
 }

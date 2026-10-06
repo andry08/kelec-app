@@ -42,37 +42,34 @@
 "| %lldkm" = "| %lldkm";
 
 /* No comment provided by engineer. */
-"Ajoutez un véhicule sur l'appli sur iPhone" = "Adăugați un vehicul în aplicație pe iPhone";
+"watchAddVehicleOnIphone" = "Adăugați un vehicul în aplicație pe iPhone";
 
 /* No comment provided by engineer. */
-"error" = "error";
+"widgetServerError" = "Nu se poate conecta la server";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur" = "Nu se poate conecta la server";
+"carMakerServerError %@" = "Nu se poate conecta la server %@";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur %@" = "Nu se poate conecta la server %@";
+"watchOpenIphoneToSync" = "Deschide aplicația pe iPhone pentru sincronizare";
 
 /* No comment provided by engineer. */
-"Ouvrez l'appli sur l'iPhone pour synchroniser" = "Deschide aplicația pe iPhone pentru sincronizare";
+"refresh" = "Reîmprospăta";
 
 /* No comment provided by engineer. */
-"Rafraîchir" = "Reîmprospăta";
+"widgetHomeScreenDescription" = "Colectează informațiile despre Renault E-Tech pe ecranul principal";
 
 /* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil" = "Colectează informațiile despre Renault E-Tech pe ecranul principal";
-
-/* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage" = "Colectează informațiile despre Renault E-Tech pe ecranul de blocare";
+"widgetLockScreenDescription" = "Colectează informațiile despre Renault E-Tech pe ecranul de blocare";
 
 /* No comment provided by engineer. */
 "Renault E-Tech" = "Renault E-Tech";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord sélectionner une voiture sur l'appli" = "Mai întâi trebuie să selectați o mașină din aplicație";
+"widgetNoCarSelected" = "Mai întâi trebuie să selectați o mașină din aplicație";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord vous connecter sur l'appli" = "Trebuie mai întâi să te conectezi la aplicație";
+"widgetNotLoggedIn" = "Trebuie mai întâi să te conectezi la aplicație";
 
 "CHARGE PLANIFIÉE | " = "ÎNCĂRCARE PROGRAMATĂ | ";
 
@@ -111,3 +108,14 @@
 "confirm" = "Confirmați";
 
 "cancel" = "Anulați";
+
+"tempoCarServerError" = "Nu se poate conecta la serverul Renault";
+"tempoRteServerError" = "Nu se poate conecta la serverul RTE";
+"tempoLoadingError" = "EROARE LA ÎNCĂRCAREA DATELOR";
+"watchCarLocationError" = "Nu se poate obține locația mașinii";
+"tempoLockScreenWidgetDescription" = "Indicație Tempo";
+"tempoWidgetDescription" = "Colectează informațiile despre Renault E-Tech pe ecranul principal cu indicația Tempo";
+"tempo2DaysWidgetDescription" = "Colectează informațiile despre Renault E-Tech pe ecranul principal cu indicația Tempo pe 2 zile";
+"watchWidgetDescription" = "Nivelul de încărcare al Renault E-Tech";
+"watchSettings" = "Setări";
+"watchWidgetCar" = "Mașina afișată în widgeturi";

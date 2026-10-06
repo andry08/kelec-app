@@ -42,37 +42,34 @@
 "| %lldkm" = "| %lldkm";
 
 /* No comment provided by engineer. */
-"Ajoutez un véhicule sur l'appli sur iPhone" = "Adjon hozzá járművet az iPhone alkalmazáshoz";
+"watchAddVehicleOnIphone" = "Adjon hozzá járművet az iPhone alkalmazáshoz";
 
 /* No comment provided by engineer. */
-"error" = "error";
+"widgetServerError" = "Nem lehet csatlakozni a szerverhez";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur" = "Nem lehet csatlakozni a szerverhez";
+"carMakerServerError %@" = "Nem lehet csatlakozni a szerverhez %@";
 
 /* No comment provided by engineer. */
-"Impossible de se connecter au serveur %@" = "Nem lehet csatlakozni a szerverhez %@";
+"watchOpenIphoneToSync" = "Nyissa meg az alkalmazást iPhone-on a szinkronizáláshoz";
 
 /* No comment provided by engineer. */
-"Ouvrez l'appli sur l'iPhone pour synchroniser" = "Nyissa meg az alkalmazást iPhone-on a szinkronizáláshoz";
+"refresh" = "Frissítés";
 
 /* No comment provided by engineer. */
-"Rafraîchir" = "Frissítés";
+"widgetHomeScreenDescription" = "Összegyűjti a Renault E-Tech adatait a kezdőképernyőn";
 
 /* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran d'accueil" = "Összegyűjti a Renault E-Tech adatait a kezdőképernyőn";
-
-/* No comment provided by engineer. */
-"Regroupe les informations de votre Renault E-Tech sur votre écran de verrouillage" = "Összegyűjti a Renault E-Tech adatait a lezárási képernyőn";
+"widgetLockScreenDescription" = "Összegyűjti a Renault E-Tech adatait a lezárási képernyőn";
 
 /* No comment provided by engineer. */
 "Renault E-Tech" = "Renault E-Tech";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord sélectionner une voiture sur l'appli" = "Először ki kell választania egy autót az alkalmazásban";
+"widgetNoCarSelected" = "Először ki kell választania egy autót az alkalmazásban";
 
 /* No comment provided by engineer. */
-"Vous devez d'abord vous connecter sur l'appli" = "Először be kell jelentkeznie az alkalmazásba";
+"widgetNotLoggedIn" = "Először be kell jelentkeznie az alkalmazásba";
 
 "CHARGE PLANIFIÉE | " = "TÖLTÉS ÜTEMEZVE | ";
 
@@ -111,3 +108,14 @@
 "confirm" = "Megerősít";
 
 "cancel" = "Mégse";
+
+"tempoCarServerError" = "Nem lehet csatlakozni a Renault szerverhez";
+"tempoRteServerError" = "Nem lehet csatlakozni az RTE szerverhez";
+"tempoLoadingError" = "HIBA AZ ADATOK BETÖLTÉSEKOR";
+"watchCarLocationError" = "Nem sikerült lekérni az autó helyzetét";
+"tempoLockScreenWidgetDescription" = "Tempo jelzés";
+"tempoWidgetDescription" = "Összegyűjti a Renault E-Tech adatait és a Tempo jelzést a kezdőképernyőn";
+"tempo2DaysWidgetDescription" = "Összegyűjti a Renault E-Tech adatait és a 2 napos Tempo jelzést a kezdőképernyőn";
+"watchWidgetDescription" = "A Renault E-Tech töltöttségi szintje";
+"watchSettings" = "Beállítások";
+"watchWidgetCar" = "A widgeteken megjelenő autó";
