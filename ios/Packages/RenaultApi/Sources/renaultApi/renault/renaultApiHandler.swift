@@ -65,28 +65,27 @@ public struct RenaultApiHandler: ApiHandler{
     public func getChargeInstantaneousPowerInWatts() -> Double {
         return self.batteryStatus.chargingInstantaneousPower ?? 0
     }
-    
-    public func getChargeText() -> String {
-        let actualChargingStatus = (self.batteryStatus.chargingStatus ?? 0).rounded(toPlaces: 1)
-        if(self.getIsCarPlugged() == false){
-            return ""
-        }else{
-            switch(actualChargingStatus){
-            case 0.1:
-                return localized("CHARGE PLANIFIÉE | ")
-            case 0.2:
-                return localized("CHARGE TERMINÉE | ")
-            case 0.3:
-                return localized("CHARGE PLANIFIÉE | ")
-            case 1.0:
-                return localized("EN CHARGE | ")
-            default:
-                return localized("NE CHARGE PAS | ")
-            }
+
+    // chargingStatus codes: same mapping as the RN app (renaultApiHandler.tsx)
+    public func getChargeStatus() -> ChargeStatus {
+        switch (self.batteryStatus.chargingStatus ?? 0).rounded(toPlaces: 1) {
+        case -1.4:
+            return .v2l
+        case ...(-1.3):
+            return .v2g
+        case _ where !self.getIsCarPlugged():
+            return .notPlugged
+        case 0.1, 0.3:
+            return .scheduled
+        case 0.2:
+            return .ended
+        case 1.0:
+            return .charging
+        default:
+            return .notCharging
         }
-        
     }
-    
+
     public func getMapLatitude() -> Latitude {
         //API HANDLER NOT USED ON RENAULT TO GET LOCATION
         return 0
@@ -111,14 +110,4 @@ public struct RenaultApiHandler: ApiHandler{
     public func getOdometerInKm() -> Double? {
         return self.cockpitStatus?.totalMileage
     }
-
-    public func getIsV2GorV2L() -> Bool {
-        let actualChargingStatus = (self.batteryStatus.chargingStatus ?? 0).rounded(toPlaces: 1)
-        return actualChargingStatus <= -1.3;
-    }
-    
-    
-    
-    
-    
 }

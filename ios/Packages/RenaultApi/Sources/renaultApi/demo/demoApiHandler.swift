@@ -48,11 +48,11 @@ public struct DemoApiHandler: ApiHandler{
     public func getChargeInstantaneousPowerInWatts() -> Double {
         return 7200
     }
-    
-    public func getChargeText() -> String {
-        return localized("EN CHARGE | ")
+
+    public func getChargeStatus() -> ChargeStatus {
+        return .charging
     }
-    
+
     public var carMaker: CarMaker
     
     public init(){
@@ -74,9 +74,4 @@ public struct DemoApiHandler: ApiHandler{
     public func getOdometerInKm() -> Double? {
         return nil
     }
-
-    public func getIsV2GorV2L() -> Bool {
-        return false
-    }
-    
 }

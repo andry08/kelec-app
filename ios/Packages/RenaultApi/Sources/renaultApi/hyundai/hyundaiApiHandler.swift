@@ -75,28 +75,18 @@ public struct HyundaiApiHandler: ApiHandler {
     private func getAvailableEnergy() -> Double{
         return Double(self.getBatteryLevel()) / 100.0 * 38.0
     }
-    
-    public func getChargeText() -> String {
-        if(!self.getIsCarPlugged()){
-            return ""
-        }else{
-            if(self.getBatteryLevel() > self.getChargeLimit()){
-                // charge is over
-                return localized("CHARGE TERMINÉE | ")
-            }
-            
-            if(self.getIsCarCharging()){
-                return localized("EN CHARGE | ")
-            }
-            
-            // all other cases
-            return localized("NE CHARGE PAS | ")
-        }
-    }
-    
 
-    
-    
+    // ended when above the charge limit, else charging or not
+    public func getChargeStatus() -> ChargeStatus {
+        if !self.getIsCarPlugged() {
+            return .notPlugged
+        }
+        if self.getBatteryLevel() > self.getChargeLimit() {
+            return .ended
+        }
+        return self.getIsCarCharging() ? .charging : .notCharging
+    }
+
     public func getHyundaiChargingLimit(hyundaiApi: HyundaiLayerReturn) -> Int {
       guard let targetSOC = hyundaiApi.status.vehicleStatus.evStatus.reservChargeInfos?.targetSOClist else {
         return 100
@@ -114,15 +104,13 @@ public struct HyundaiApiHandler: ApiHandler {
         return self.apiData.status.vehicleLocation.coord.lon
     }
     
+    // in km, in miles when the app displays miles (like the RN app and Renault)
     public func getMilage(appPreferences: AppPreferences?) -> Double {
-        return self.apiData.status.odometer.value
+        let mileage = self.apiData.status.odometer.value
+        return appPreferences?.displayMiles == true ? mileage * 0.621371 : mileage
     }
     
     public func getOdometerInKm() -> Double? {
         return self.apiData.status.odometer.value
-    }
-
-    public func getIsV2GorV2L() -> Bool {
-        return false
     }
 }
