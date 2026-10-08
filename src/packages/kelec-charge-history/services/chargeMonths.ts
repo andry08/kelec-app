@@ -10,8 +10,21 @@ export const sortByStartDate = (charges: Charge[], sortDesc: boolean): Charge[] 
         ? b.getStartDate().getTime() - a.getStartDate().getTime()
         : a.getStartDate().getTime() - b.getStartDate().getTime());
 
+/** Écart maximal (en %) entre le niveau de fin d'une charge et le niveau de début de la suivante. */
+const MERGE_BATTERY_TOLERANCE = 1;
+/** Délai maximal entre la fin d'une charge et le début de la suivante. */
+const MERGE_MAX_GAP_MS = 12 * 60 * 60 * 1000;
+
+/** `next` prolonge `previous` : niveaux qui se suivent (à ±1 %), moins de 12 h d'écart, même type (V2G ou non). */
+const continuesCharge = (previous: Charge, next: Charge): boolean =>
+    previous.chargeEndBatteryLevel !== undefined &&
+    next.chargeStartBatteryLevel !== undefined &&
+    Math.abs(next.chargeStartBatteryLevel - previous.chargeEndBatteryLevel) <= MERGE_BATTERY_TOLERANCE &&
+    next.getStartDate().getTime() - previous.getEndDate().getTime() < MERGE_MAX_GAP_MS &&
+    previous.isV2G === next.isV2G;
+
 /**
- * Fusionne les charges consécutives où le niveau de fin de l'une est le niveau de début de la suivante.
+ * Fusionne les charges consécutives qui se prolongent (voir `continuesCharge`).
  * `charges` doit être trié par date croissante.
  */
 export const mergeCharges = (charges: Charge[]): Charge[] => {
@@ -20,11 +33,7 @@ export const mergeCharges = (charges: Charge[]): Charge[] => {
     while (i < charges.length) {
         let current = charges[i];
         let j = i + 1;
-        while (
-            j < charges.length &&
-            current.chargeEndBatteryLevel === charges[j].chargeStartBatteryLevel &&
-            current.isV2G === charges[j].isV2G
-        ) {
+        while (j < charges.length && continuesCharge(current, charges[j])) {
             const next = charges[j];
             const subCharges = current.getSubCharges().length !== 0
                 ? [...current.getSubCharges(), next]
@@ -53,13 +62,30 @@ export const mergeCharges = (charges: Charge[]): Charge[] => {
     return merged;
 };
 
-/** Nombre de mois distincts contenant au moins une charge après filtrage. */
-export const countMonths = (charges: Charge[], filters: Filter[]): number =>
-    new Set(applyFilters(filters, charges).map(charge => monthKey(charge.getStartDate()))).size;
-
-type BuildOptions = {
+type SelectOptions = {
     merge: boolean;
     sortDesc?: boolean;
+};
+
+/**
+ * Charges telles que l'écran les affiche : filtrées, fusionnées si demandé, puis triées.
+ * La fusion se fait toujours sur une liste triée par date croissante, quel que soit l'ordre reçu.
+ */
+export const selectCharges = (
+    charges: Charge[],
+    filters: Filter[],
+    { merge, sortDesc = true }: SelectOptions,
+): Charge[] => {
+    let selected = applyFilters(filters, charges);
+    if (merge) selected = mergeCharges(sortByStartDate(selected, false));
+    return sortByStartDate(selected, sortDesc);
+};
+
+/** Nombre de mois distincts contenant au moins une charge après filtrage (et fusion si demandée). */
+export const countMonths = (charges: Charge[], filters: Filter[], merge: boolean): number =>
+    new Set(selectCharges(charges, filters, { merge }).map(charge => monthKey(charge.getStartDate()))).size;
+
+type BuildOptions = SelectOptions & {
     monthLimit?: number; // nombre de mois à construire (pagination)
 };
 
@@ -69,9 +95,7 @@ export const buildChargeMonths = (
     filters: Filter[],
     { merge, sortDesc = true, monthLimit = 2 }: BuildOptions,
 ): ChargeMonth[] => {
-    let selected = applyFilters(filters, charges);
-    if (merge) selected = mergeCharges(selected);
-    selected = sortByStartDate(selected, sortDesc);
+    const selected = selectCharges(charges, filters, { merge, sortDesc });
 
     // Les charges étant triées, les mois sortent déjà dans le bon ordre.
     const months: ChargeMonth[] = [];
