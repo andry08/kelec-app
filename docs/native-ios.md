@@ -59,7 +59,8 @@ ios/
 │   └── PreviewData.swift           Données de démo des widgets (dont les 5 états des previews)
 ├── Kelec/RNSharedWidget.swift (+ .m)  Bridge RN en Swift, méthodes en promesses
 ├── Intents/                        CarEntity / CarQuery, LaunchHVACIntent (Siri)
-├── KeleciOSWidget/                 Widgets iOS : providers, vues (Small, Medium, Tempo, écran verrouillé), Tempo.swift
+├── KeleciOSWidget/                 Widgets iOS : providers, vues (Small, Medium, Tempo, écran verrouillé), Tempo.swift,
+│                                   contrôle « confort thermique » (LaunchHVACControl, iOS 18)
 ├── KelecWatchOs Watch App/         WatchSync, CarViewModel, vues (CarView, BatteryCardView, MapView, WatchSettingsView)
 ├── KelecWatchOSWidgets/            Widgets de la montre (configuration statique)
 └── Packages/RenaultApi/            Package local renaultApi : clients Renault group, Hyundai, démo, RTE Tempo
@@ -82,6 +83,7 @@ et l'app RN en lit une partie.
 | `<vin>_mileageHistory` | App Group | Kilométrage du dernier mois (`[{mileage, timestamp ISO}]`) | `SharedHistory` | App RN (historique de charge) |
 | `<vin>_batteryStatus` | App Group | Dernier `RenaultBatteryStatus` | `SharedHistory` | App RN |
 | `watchWidgetCar` | App Group (montre) | VIN choisi dans les Réglages de la montre | `WatchSettingsView` | Widgets de la montre |
+| `<vin>/savedTemperature` | UserDefaults.standard (montre) | Dernière température du préchauffage (`"21"`), même clé et format que l'app RN (AsyncStorage) | `CarViewModel` | App de la montre |
 | `<vin>_password` | Keychain | Mot de passe du compte | Stockage chiffré RN / `WatchSync` (Hyundai) | Clients d'API, intent |
 | `cookieValue_<email>` | Keychain | Session Renault | App RN / `WatchSync` | Client Renault |
 | `RENAULT_carsLoaded`, `HYUNDAI_carsLoaded` | App Group | Cache du dernier statut par VIN | `VehicleCache` | App et widgets (iPhone et montre) : le dernier chargement gagne |
@@ -156,11 +158,31 @@ seulement si une voiture est affichée.
 - **App** : `ContentView` lit le compte (une page par voiture, puis les Réglages) et se recharge à chaque synchro
   (`WatchSync.lastSyncDate`). `CarViewModel.load()` affiche d'abord le cache (`VehicleLoader.cachedStatus`), puis le
   statut chargé ; `refresh()` recharge aussi les widgets de la montre.
+- **Préchauffage** : la confirmation est une feuille (une alerte ne peut pas contenir de réglage) avec un `Stepper`
+  et la Digital Crown. Températures de `HvacTemperature` (`Shared/ApiClients.swift`) : 17 à 27 °C, LOW / HIGH aux
+  bornes, 21 °C par défaut, comme `kelec-hvac/models/Temperature.ts`. Enregistrée par voiture à chaque changement.
 
 ### Intent Siri / Raccourcis (`LaunchHVACIntent`)
 
-Retrouve la voiture par VIN dans le compte, envoie `sendHVACCommand` (`launchHvac` du client du constructeur)
-et répond par un dialogue traduit (`informationSent`, `preHeatLaunched` ou `error`, `commandSendError`).
+Paramètres : la voiture et la température (`Stepper` de 17 à 27 °C, 21 °C par défaut, aussi pour les raccourcis
+créés avant ce paramètre ; valeurs en dur, AppIntents exige des littéraux). Retrouve la voiture par VIN dans le compte,
+envoie `sendHVACCommand` (`launchHvac` du client du constructeur) et répond par un dialogue traduit
+(`preHeatLaunchedOn %@ %@` ou `preHeatLaunchError %@`). Textes du raccourci : `launchPreHeatSummary ${car} ${temperature}`,
+`launchPreHeatTemperature`, `launchPreHeatCarDescription`, `launchPreHeatTemperatureDescription`.
+
+### Contrôle « confort thermique » (`LaunchHVACControl`, iOS 18)
+
+Bouton du Centre de contrôle, de l'écran verrouillé et du bouton Action, dans l'extension des widgets iOS
+(`if #available(iOS 18.0, *)` dans le bundle, l'extension ciblant iOS 17.6).
+
+- Un contrôle ne peut rien demander au tap : la voiture et la température (17 à 27 °C, 21 °C par défaut) se choisissent
+  à l'ajout (`LaunchHVACControlConfiguration`, `promptsForUserConfiguration`), puis par appui long → Modifier.
+  Plusieurs contrôles peuvent coexister (autre voiture, autre température).
+- Au tap, `LaunchHVACControlIntent` (masqué de Raccourcis, l'intent Siri reste `LaunchHVACIntent`) s'exécute dans
+  l'extension : compte de l'App Group, puis `sendHVACCommand`. En cas d'échec il lève une erreur
+  (`widgetNoCarSelected` ou `commandSendError`) et écrit dans `widgetLogs`.
+- Pas de dernière température de l'app : elle est dans AsyncStorage, illisible depuis le natif.
+- Textes : `launchPreHeat`, `launchPreHeatControlDescription`, et ceux de l'intent Siri pour les paramètres.
 
 ## Affichage des widgets
 
@@ -207,7 +229,7 @@ et répond par un dialogue traduit (`informationSent`, `preHeatLaunched` ou `err
   `widgetHomeScreenDescription`, `widgetLockScreenDescription`, `tempo*`, `watch*`…
 - En SwiftUI, `Text("clé")` avec une chaîne littérale est traduit. `Text(variable)` ne l'est pas : utiliser `LocalizedStringKey` ou `localized(_:)`.
 - Les fichiers ne contiennent plus le doublon de `error`. Les erreurs de traduction existantes (catalan, croate, norvégien, tchèque, italien) sont corrigées.
-- Montre et Siri/Raccourcis : « préchauffage » devient « confort thermique » en français (`preHeatLaunched`, `launchPreHeat`, `launchPreHeat ${car}`, `areYouSureYouWantToLaunchPreheating`). Les clés ne changent pas, et les autres langues et `localizations.json` non plus.
+- Montre et Siri/Raccourcis : « préchauffage » devient « confort thermique » en français (`preHeatLaunched`, `launchPreHeat`, `areYouSureYouWantToLaunchPreheating`). Les clés ne changent pas, et les autres langues et `localizations.json` non plus.
 - La clé RN `isSelectedAsDefault` de `localizations.json` n'est plus utilisée (fichier non modifié).
 - Ajouter un texte : une clé (pas une phrase) dans les 19 `Localizable.strings`, puis `Text("clé")` ou `localized("clé")`.
   Les fichiers doivent être membres des targets qui l'affichent (app, widgets iOS, widgets de la montre).
@@ -225,6 +247,7 @@ et répond par un dialogue traduit (`informationSent`, `preHeatLaunched` ou `err
   - synchro de la montre depuis Réglages → « Synchroniser avec l'Apple Watch », app de la montre fermée ;
   - choix de la voiture des widgets de la montre (Réglages de la montre) ;
   - Siri / Raccourcis : « confort thermique » sur une voiture.
+  - Contrôle du Centre de contrôle (iOS 18) : ajout (choix de la voiture et de la température), tap, échec réseau.
 - Débogage : Réglages → Debug → « export widget logs » (`widgetLogs`, 5 jours, messages de `VehicleLoader`,
   `getCarMakerApiClient` et du client Renault), et « Debug zone » (choix d'une voiture, « Battery status »
   pas à pas, « Mileage history » : 10 dernières entrées de `<vin>_mileageHistory`, export des logs en texte).
